@@ -6,6 +6,7 @@ import { BannerPlacement, HomeSectionKey, PrismaClient, ProductStatus, VendorSta
 import { computeDiscountPercent } from '../src/modules/catalog/catalog.queries';
 import { seedAccountDemo } from './seed-account';
 import { seedAccountExtras } from './seed-account-extras';
+import { seedAccountMore } from './seed-account-more';
 
 const rupees = (value: number) => Math.round(value * 100);
 
@@ -195,6 +196,12 @@ if (require.main === module) {
     .then((result) => {
       if (result.accounts) {
         console.log(`Added addresses, wishlist, price alerts and a sample return to ${result.accounts} account(s).`);
+      }
+    })
+    .then(() => seedAccountMore(prisma))
+    .then((result) => {
+      if (result.accounts) {
+        console.log(`Added wallet history, a review, affiliate earnings and a support ticket to ${result.accounts} account(s).`);
       }
     })
     .catch((error) => {

@@ -333,7 +333,7 @@ export function ReturnDetailPage() {
                 Cancel return
               </button>
             )}
-            <Link href="/browse/help" className={secondaryAction}>
+            <Link href={`/account/support/new?order=${item.order.id}`} className={secondaryAction}>
               Need help?
             </Link>
           </div>

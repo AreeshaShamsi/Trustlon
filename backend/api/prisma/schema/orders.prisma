@@ -57,8 +57,9 @@ model Order {
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Restrict)
-  subOrders SubOrder[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  subOrders      SubOrder[]
+  supportTickets SupportTicket[]
 
   @@index([userId, placedAt])
   @@map("orders")
@@ -125,6 +126,7 @@ model OrderItem {
 
   subOrder    SubOrder     @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
   returnItems ReturnItem[]
+  review      Review?
 
   @@index([subOrderId])
   @@index([productId])

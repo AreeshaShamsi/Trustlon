@@ -8,7 +8,9 @@ import { FileStorageModule } from './common/storage/file-storage';
 import { Env, validateEnv } from './config/env';
 import { AccountModule } from './modules/account/account.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
+import { AffiliateModule } from './modules/affiliate/affiliate.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { B2bModule } from './modules/b2b/b2b.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HomeModule } from './modules/home/home.module';
 import { LocationModule } from './modules/location/location.module';
@@ -16,8 +18,10 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PriceAlertsModule } from './modules/price-alerts/price-alerts.module';
 import { ReturnsModule } from './modules/returns/returns.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ShoppingModule } from './modules/shopping/shopping.module';
 import { StoresModule } from './modules/stores/stores.module';
+import { SupportModule } from './modules/support/support.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { HealthController } from './modules/health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
@@ -51,6 +55,10 @@ import { PrismaModule } from './prisma/prisma.module';
     AddressesModule,
     PriceAlertsModule,
     ReturnsModule,
+    ReviewsModule,
+    B2bModule,
+    AffiliateModule,
+    SupportModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

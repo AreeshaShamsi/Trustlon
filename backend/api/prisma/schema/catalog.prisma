@@ -69,6 +69,8 @@ model Product {
   wishlistItems  WishlistItem[]
   recentlyViewed RecentlyViewed[]
   priceAlerts    PriceAlert[]
+  reviews        Review[]
+  affiliateLinks AffiliateLink[]
 
   @@index([categoryId, status])
   @@index([vendorId, status])

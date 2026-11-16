@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useId, useMemo } from 'react';
+import { forwardRef, useEffect, useId, useMemo, useState } from 'react';
 import { countryOptions, type CountryCode } from '@/lib/phone';
 import { cx, Field } from './primitives';
 
@@ -23,6 +23,11 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(function
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const options = useMemo(() => countryOptions(locale), [locale]);
+  // Country names come from the browser's language data, which can differ from the server's.
+  // Show only the selected country until the page is interactive, then the full list.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  const visibleOptions = ready ? options : options.filter((option) => option.code === country);
   const selected = options.find((option) => option.code === country);
 
   return (
@@ -47,8 +52,8 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(function
             onChange={(event) => onCountryChange(event.target.value as CountryCode)}
             className="absolute inset-0 cursor-pointer opacity-0"
           >
-            {options.map((option) => (
-              <option key={option.code} value={option.code}>
+            {visibleOptions.map((option) => (
+              <option key={option.code} value={option.code} suppressHydrationWarning>
                 {option.name} ({option.dialCode})
               </option>
             ))}

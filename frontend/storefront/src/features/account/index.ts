@@ -8,3 +8,8 @@ export { ReturnDetailPage } from './ReturnDetailPage';
 export { ReturnRequestForm } from './ReturnRequestForm';
 export { ReturnsList } from './ReturnsList';
 export { WishlistPage } from './WishlistPage';
+export { AffiliatePage } from './AffiliatePage';
+export { BusinessPage } from './BusinessPage';
+export { ReviewsPage } from './ReviewsPage';
+export { NewTicket, SupportList, TicketThread } from './SupportPages';
+export { WalletPage } from './WalletPage';

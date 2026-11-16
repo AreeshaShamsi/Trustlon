@@ -21,11 +21,11 @@ const NAV: NavItem[] = [
   { label: 'Wishlist', href: '/account/wishlist', count: 'wishlist' },
   { label: 'Price alerts', href: '/account/price-alerts' },
   { label: 'Addresses', href: '/account/addresses' },
-  { label: 'Wallet', soon: true },
-  { label: 'Reviews', soon: true },
-  { label: 'B2B', soon: true },
-  { label: 'Affiliate', soon: true },
-  { label: 'Support', soon: true },
+  { label: 'Wallet', href: '/account/wallet' },
+  { label: 'Reviews', href: '/account/reviews' },
+  { label: 'B2B', href: '/account/b2b' },
+  { label: 'Refer and earn', href: '/account/affiliate' },
+  { label: 'Support', href: '/account/support' },
   { label: 'Settings', soon: true },
 ];
 

@@ -61,17 +61,20 @@ function InvoiceButton({ subOrder }: { subOrder: SubOrder }) {
 }
 
 function SubOrderPanel({
+  orderId,
   subOrder,
   index,
   count,
   onCancel,
 }: {
+  orderId: string;
   subOrder: SubOrder;
   index: number;
   count: number;
   onCancel: () => void;
 }) {
   const { shipment, refund, cancellation, actions } = subOrder;
+  const canReview = subOrder.status === 'DELIVERED' || subOrder.status === 'RETURN_REQUESTED';
   return (
     <Panel as="article" padded={false}>
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
@@ -109,6 +112,15 @@ function SubOrderPanel({
                 )}
                 <p className="font-medium text-navy">{item.name}</p>
                 <p className="mt-1 text-sm text-slate-500">Qty {item.quantity}</p>
+                {canReview && item.productId && (
+                  <Link
+                    href={`/account/reviews?item=${item.id}`}
+                    className="mt-1 inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-teal-600 hover:underline"
+                  >
+                    <Icon name="star" className="h-4 w-4" />
+                    Rate and review
+                  </Link>
+                )}
               </div>
               <div className="shrink-0 text-right">
                 <p className="font-semibold text-navy">{formatMoney(item.totalPaise)}</p>
@@ -168,7 +180,7 @@ function SubOrderPanel({
                 </Link>
               )}
               <InvoiceButton subOrder={subOrder} />
-              <Link href="/browse/help" className={secondaryAction}>
+              <Link href={`/account/support/new?order=${orderId}`} className={secondaryAction}>
                 Need help?
               </Link>
             </div>
@@ -403,6 +415,7 @@ export function OrderDetailPage() {
           {order.subOrders.map((subOrder, index) => (
             <SubOrderPanel
               key={subOrder.id}
+              orderId={order.id}
               subOrder={subOrder}
               index={index}
               count={order.subOrders.length}

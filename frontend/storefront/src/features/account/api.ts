@@ -1,6 +1,21 @@
 import { apiBlob, apiDownload, apiFetch, apiUpload } from '@/lib/http';
 import type {
   AccountSummary,
+  AffiliateEarning,
+  AffiliateLink,
+  AffiliateSummary,
+  BusinessProfile,
+  BusinessProfileInput,
+  GstinCheck,
+  MyReview,
+  PendingReview,
+  ReviewInput,
+  TicketCategory,
+  TicketDetail,
+  TicketSummary,
+  WalletFilter,
+  WalletOverview,
+  WalletTransaction,
   Address,
   AddressInput,
   CreateReturnInput,
@@ -125,4 +140,117 @@ export const accountApi = {
       auth: true,
       method: 'POST',
     }),
+
+  wallet: () => apiFetch<WalletOverview>('/wallet', { auth: true }),
+
+  walletTransactions: (page: number, type?: WalletFilter, signal?: AbortSignal) =>
+    apiFetch<Page<WalletTransaction>>(
+      `/wallet/transactions${toQuery({ page, pageSize: 20, type })}`,
+      {
+        auth: true,
+        signal,
+      },
+    ),
+
+  myReviews: () =>
+    apiFetch<{ pending: PendingReview[]; reviews: MyReview[] }>('/me/reviews', { auth: true }),
+
+  createReview: (orderItemId: string, input: ReviewInput) =>
+    apiFetch<MyReview>('/reviews', { auth: true, method: 'POST', body: { orderItemId, ...input } }),
+
+  updateReview: (id: string, input: ReviewInput) =>
+    apiFetch<MyReview>(`/reviews/${encodeURIComponent(id)}`, {
+      auth: true,
+      method: 'PATCH',
+      body: input,
+    }),
+
+  uploadReviewMedia: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiUpload<{ id: string; kind: 'PHOTO' | 'VIDEO' }>('/reviews/media', form);
+  },
+
+  reviewMedia: (id: string, signal?: AbortSignal) =>
+    apiBlob(`/reviews/media/${encodeURIComponent(id)}`, signal),
+
+  business: () =>
+    apiFetch<{
+      profile: BusinessProfile | null;
+      tiers: Array<{ minQuantity: number; label: string }>;
+    }>('/me/b2b', {
+      auth: true,
+    }),
+
+  saveBusiness: (input: BusinessProfileInput) =>
+    apiFetch<BusinessProfile>('/me/b2b', { auth: true, method: 'POST', body: input }),
+
+  checkGstin: (gstin: string) =>
+    apiFetch<GstinCheck>('/kyc/gstin/verify', { auth: true, method: 'POST', body: { gstin } }),
+
+  affiliateSummary: () => apiFetch<AffiliateSummary>('/affiliate/summary', { auth: true }),
+
+  affiliateLinks: () => apiFetch<{ items: AffiliateLink[] }>('/affiliate/links', { auth: true }),
+
+  createAffiliateLink: (productId: string) =>
+    apiFetch<{ items: AffiliateLink[] }>('/affiliate/links', {
+      auth: true,
+      method: 'POST',
+      body: { productId },
+    }),
+
+  affiliateEarnings: (page: number, signal?: AbortSignal) =>
+    apiFetch<Page<AffiliateEarning>>(`/affiliate/earnings${toQuery({ page, pageSize: 10 })}`, {
+      auth: true,
+      signal,
+    }),
+
+  trackAffiliateClick: (code: string) =>
+    apiFetch<{ code: string; product: { slug: string; name: string; categorySlug: string } }>(
+      `/affiliate/clicks/${encodeURIComponent(code)}`,
+      { method: 'POST' },
+    ),
+
+  tickets: (page: number, status?: 'open' | 'resolved', signal?: AbortSignal) =>
+    apiFetch<Page<TicketSummary>>(`/tickets${toQuery({ page, pageSize: 10, status })}`, {
+      auth: true,
+      signal,
+    }),
+
+  ticket: (id: string, signal?: AbortSignal) =>
+    apiFetch<TicketDetail>(`/tickets/${encodeURIComponent(id)}`, { auth: true, signal }),
+
+  ticketCategories: () =>
+    apiFetch<{ items: Array<{ value: TicketCategory; label: string }> }>('/tickets/categories', {
+      auth: true,
+    }),
+
+  createTicket: (input: {
+    category: TicketCategory;
+    subject: string;
+    orderId?: string;
+    description: string;
+    attachmentIds: string[];
+  }) => apiFetch<TicketDetail>('/tickets', { auth: true, method: 'POST', body: input }),
+
+  replyTicket: (id: string, body: string, attachmentIds: string[]) =>
+    apiFetch<TicketDetail>(`/tickets/${encodeURIComponent(id)}/messages`, {
+      auth: true,
+      method: 'POST',
+      body: { body, attachmentIds },
+    }),
+
+  resolveTicket: (id: string) =>
+    apiFetch<TicketDetail>(`/tickets/${encodeURIComponent(id)}/resolve`, {
+      auth: true,
+      method: 'POST',
+    }),
+
+  uploadTicketFile: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiUpload<{ id: string; fileName: string }>('/tickets/attachments', form);
+  },
+
+  ticketFile: (id: string) => apiBlob(`/tickets/attachments/${encodeURIComponent(id)}`),
 };

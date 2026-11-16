@@ -68,7 +68,17 @@ function ProfileSummary({ summary }: { summary: AccountSummary }) {
 
 function WalletWidget({ summary }: { summary: AccountSummary }) {
   return (
-    <Panel title="Wallet and Trustlon Coins">
+    <Panel
+      title="Wallet and Trustlon Coins"
+      action={
+        <Link
+          href="/account/wallet"
+          className="text-sm font-semibold text-teal-600 hover:underline"
+        >
+          View history
+        </Link>
+      }
+    >
       <dl className="grid grid-cols-2 gap-4">
         <div className="rounded-lg bg-navy-50 p-4">
           <dt className="text-xs text-slate-500">Wallet balance</dt>
@@ -123,8 +133,8 @@ const QUICK_LINKS: Array<{ label: string; description: string; href: string; ico
   },
   {
     label: 'Contact support',
-    description: 'We usually reply within a day',
-    href: '/browse/help',
+    description: 'Our team replies in your support inbox',
+    href: '/account/support/new',
     icon: 'shield',
   },
 ];

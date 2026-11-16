@@ -304,3 +304,180 @@ export interface CreateReturnInput {
   pickupAddressId?: string;
   refundMethod: ReturnRefundMethod;
 }
+
+/* Wallet (3.6) */
+
+export type WalletEntrySource = 'REFUND' | 'CASHBACK' | 'REFERRAL' | 'ORDER_PAYMENT' | 'ADJUSTMENT';
+export type WalletFilter = 'refund' | 'cashback' | 'referral' | 'spend' | 'other';
+
+export interface WalletOverview {
+  balancePaise: number;
+  coins: number;
+  coinsExpiringSoon: { coins: number; withinDays: number; nextExpiry: string | null };
+  totals: { creditedPaise: number; spentPaise: number };
+  rules: {
+    coinValuePaise: number;
+    maxRedeemPercent: number;
+    earnPerHundredRupees: number;
+    expiryMonths: number;
+  };
+}
+
+export interface WalletTransaction {
+  id: string;
+  type: 'CREDIT' | 'DEBIT';
+  source: WalletEntrySource;
+  amountPaise: number;
+  coins: number;
+  balanceAfterPaise: number;
+  description: string;
+  reference: string | null;
+  coinsExpireAt: string | null;
+  createdAt: string;
+}
+
+/* Reviews (3.7) */
+
+export type ReviewStatus = 'PUBLISHED' | 'UNDER_MODERATION' | 'REJECTED';
+
+export interface PendingReview {
+  orderItemId: string;
+  orderId: string;
+  orderNumber: string;
+  deliveredAt: string | null;
+  product: { id: string; slug: string; name: string; image: string; brand: string | null };
+}
+
+export interface MyReview {
+  id: string;
+  status: ReviewStatus;
+  rating: number;
+  title: string;
+  body: string;
+  rejectionReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  orderItemId: string;
+  orderNumber: string;
+  product: { id: string; slug: string; name: string; image: string };
+  media: Array<{ id: string; kind: 'PHOTO' | 'VIDEO' }>;
+}
+
+export interface ReviewInput {
+  rating: number;
+  title: string;
+  body: string;
+  mediaIds: string[];
+}
+
+/* B2B (3.8) */
+
+export type BusinessStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
+
+export interface BusinessProfile {
+  status: BusinessStatus;
+  businessName: string;
+  gstin: string;
+  pan: string;
+  billing: { line1: string; line2: string | null; city: string; state: string; pincode: string };
+  rejectionReason: string | null;
+  submittedAt: string;
+  verifiedAt: string | null;
+  bulkPricingEnabled: boolean;
+}
+
+export interface BusinessProfileInput {
+  businessName: string;
+  gstin: string;
+  pan: string;
+  billingLine1: string;
+  billingLine2?: string;
+  billingCity: string;
+  billingState: string;
+  billingPincode: string;
+}
+
+export interface GstinCheck {
+  gstin: string;
+  valid: boolean;
+  reason: string | null;
+  stateCode: string | null;
+  state: string | null;
+  pan: string | null;
+}
+
+/* Affiliate (3.9) */
+
+export interface AffiliateSummary {
+  referral: { code: string; path: string; friendsJoined: number; rewardsPaise: number };
+  affiliate: {
+    links: number;
+    clicks: number;
+    orders: number;
+    pendingPaise: number;
+    confirmedPaise: number;
+    paidPaise: number;
+  };
+  rules: { commissionPercent: number; attributionDays: number };
+}
+
+export interface AffiliateLink {
+  id: string;
+  code: string;
+  path: string;
+  clicks: number;
+  createdAt: string;
+  product: { id: string; slug: string; name: string; image: string; pricePaise: number } | null;
+}
+
+export interface AffiliateEarning {
+  id: string;
+  orderNumber: string;
+  productName: string;
+  saleAmountPaise: number;
+  commissionPaise: number;
+  status: 'PENDING' | 'CONFIRMED' | 'PAID' | 'CANCELLED';
+  confirmAfter: string;
+  createdAt: string;
+}
+
+/* Support (3.10) */
+
+export type TicketCategory =
+  | 'ORDER'
+  | 'DELIVERY'
+  | 'RETURN_REFUND'
+  | 'PAYMENT'
+  | 'PRODUCT'
+  | 'ACCOUNT'
+  | 'OTHER';
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'AWAITING_CUSTOMER' | 'RESOLVED' | 'CLOSED';
+
+export interface TicketSummary {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  category: TicketCategory;
+  categoryLabel: string;
+  status: TicketStatus;
+  order: { id: string; orderNumber: string } | null;
+  lastMessageAt: string;
+  createdAt: string;
+  lastMessage: { authorType: 'CUSTOMER' | 'AGENT' | 'SYSTEM'; preview: string } | null;
+}
+
+export interface TicketDetail extends TicketSummary {
+  canReply: boolean;
+  canClose: boolean;
+  resolvedAt: string | null;
+  closedAt: string | null;
+  messages: Array<{
+    id: string;
+    authorType: 'CUSTOMER' | 'AGENT' | 'SYSTEM';
+    authorName: string;
+    body: string;
+    createdAt: string;
+    attachments: Array<{ id: string; fileName: string; contentType: string; sizeBytes: number }>;
+  }>;
+}

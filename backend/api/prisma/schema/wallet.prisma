@@ -37,11 +37,14 @@ model WalletEntry {
   description       String            @db.VarChar(160)
   /// Order, sub-order or payment reference the entry belongs to.
   reference         String?           @db.VarChar(80)
+  /// For credits that include coins: when those coins expire.
+  coinsExpireAt     DateTime?         @map("coins_expire_at")
   createdAt         DateTime          @default(now()) @map("created_at")
 
   wallet Wallet @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([userId, coinsExpireAt])
   @@map("wallet_entries")
 }
 
