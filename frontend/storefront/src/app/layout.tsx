@@ -12,6 +12,26 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: colors.navy.DEFAULT };
 
+/**
+ * Fonts for every storefront language. The browser downloads a script's font only when a page
+ * shows that script, so English visitors don't pay for the others.
+ */
+const FONT_FAMILIES = [
+  'Inter',
+  'Noto+Sans+Devanagari',
+  'Noto+Sans+Bengali',
+  'Noto+Sans+Tamil',
+  'Noto+Sans+Telugu',
+  'Noto+Sans+Kannada',
+  'Noto+Sans+Malayalam',
+];
+const FONTS_URL = `https://fonts.googleapis.com/css2?${FONT_FAMILIES.map(
+  (family) => `family=${family}:wght@100..900`,
+).join('&')}&display=swap`;
+
+/** Used by the sans font stack in design-system/tokens/typography.ts. */
+const SCRIPT_FONT_VARIABLES = `:root{--font-bengali:'Noto Sans Bengali';--font-tamil:'Noto Sans Tamil';--font-telugu:'Noto Sans Telugu';--font-kannada:'Noto Sans Kannada';--font-malayalam:'Noto Sans Malayalam';}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -19,10 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Font availability must not block compilation of the root layout. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Noto+Sans+Devanagari:wght@100..900&display=swap"
-        />
+        <link rel="stylesheet" href={FONTS_URL} />
+        <style>{SCRIPT_FONT_VARIABLES}</style>
       </head>
       <body>
         <LanguageProvider>

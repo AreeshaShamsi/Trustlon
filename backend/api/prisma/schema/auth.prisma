@@ -16,9 +16,17 @@ enum UserStatus {
   BLOCKED
 }
 
+/// Storefront languages (same set as large Indian marketplaces). Add a value here and a
+/// dictionary in the storefront to support another language.
 enum Language {
   EN
   HI
+  BN
+  MR
+  TA
+  TE
+  KN
+  ML
 }
 
 enum OtpChannel {
@@ -30,6 +38,15 @@ enum OtpPurpose {
   SIGNUP
   LOGIN
   RESET_PASSWORD
+  /// Confirms a new email or mobile number from Account settings (3.11).
+  CHANGE_CONTACT
+}
+
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  PREFER_NOT_TO_SAY
 }
 
 model User {
@@ -49,6 +66,8 @@ model User {
   referredById      String?    @map("referred_by_id") @db.Uuid
   termsAcceptedAt   DateTime   @map("terms_accepted_at")
   marketingOptIn    Boolean    @default(false) @map("marketing_opt_in")
+  dateOfBirth       DateTime?  @map("date_of_birth") @db.Date
+  gender            Gender?
   lastLoginAt       DateTime?  @map("last_login_at")
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
@@ -59,22 +78,24 @@ model User {
   sessions   Session[]
 
   // Relations owned by other modules (vendors, shopping, orders, wallet, account, returns,
-  // reviews, B2B, affiliate, support).
-  vendors           Vendor[]           @relation("VendorOwner")
-  cart              Cart?
-  wishlistItems     WishlistItem[]
-  recentlyViewed    RecentlyViewed[]
-  orders            Order[]
-  wallet            Wallet?
-  primeMembership   PrimeMembership?
-  addresses         Address[]
-  priceAlerts       PriceAlert[]
-  returnRequests    ReturnRequest[]
-  reviews           Review[]
-  businessProfile   BusinessProfile?
-  affiliateLinks    AffiliateLink[]
-  affiliateEarnings AffiliateEarning[]
-  supportTickets    SupportTicket[]
+  // reviews, B2B, affiliate, support, settings).
+  vendors                Vendor[]                @relation("VendorOwner")
+  cart                   Cart?
+  wishlistItems          WishlistItem[]
+  recentlyViewed         RecentlyViewed[]
+  orders                 Order[]
+  wallet                 Wallet?
+  primeMembership        PrimeMembership?
+  addresses              Address[]
+  priceAlerts            PriceAlert[]
+  returnRequests         ReturnRequest[]
+  reviews                Review[]
+  businessProfile        BusinessProfile?
+  affiliateLinks         AffiliateLink[]
+  affiliateEarnings      AffiliateEarning[]
+  supportTickets         SupportTicket[]
+  notificationPreference NotificationPreference?
+  accountDeletion        AccountDeletion?
 
   @@map("users")
 }

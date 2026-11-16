@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert, Button, PasswordField } from '@/components/ui';
-import { useI18n } from '@/lib/i18n/language-provider';
+import { fromApiLanguage, useI18n } from '@/lib/i18n/language-provider';
 import { authApi, type SessionResponse } from '../api';
 import { readGuestCartToken, useAuth } from '../auth-provider';
 import {
@@ -25,10 +25,13 @@ type Tab = 'password' | 'otp';
 
 function useCompleteLogin() {
   const { startSession } = useAuth();
+  const { setLanguage } = useI18n();
   const router = useRouter();
   const next = safeNextPath(useSearchParams().get('next'));
   return (session: SessionResponse) => {
     startSession(session);
+    // The language saved in Account settings follows the customer to every device.
+    setLanguage(fromApiLanguage(session.user.preferredLanguage));
     router.replace(next);
   };
 }
@@ -94,6 +97,7 @@ function PasswordLoginForm() {
         label={t.fields.password}
         autoComplete="current-password"
         showLabel={t.common.show}
+        capsLockLabel={t.common.capsLock}
         hideLabel={t.common.hide}
         error={form.formState.errors.password?.message}
         aside={

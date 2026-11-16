@@ -50,7 +50,13 @@ function ReferralCard({ summary, origin }: { summary: AffiliateSummary; origin: 
   const message = `Join me on Trustlon for escrow-protected shopping from verified sellers: ${link}`;
   return (
     <Panel title="Invite friends">
-      <p className="text-sm text-slate-600">Share your code. Friends enter it when they sign up.</p>
+      <p className="text-sm text-slate-600">
+        Share your code. Friends enter it when they sign up, and you get{' '}
+        <span className="font-semibold text-navy">
+          {formatMoney(summary.rules.referralRewardPaise)}
+        </span>{' '}
+        in your wallet when their first order is delivered.
+      </p>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <span className="rounded-lg border-2 border-dashed border-teal bg-teal-50 px-4 py-2 font-mono text-lg font-semibold tracking-widest text-teal-600">
           {summary.referral.code}

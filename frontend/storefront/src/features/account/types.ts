@@ -1,4 +1,5 @@
 import type { Product } from '@/features/home/types';
+import type { ApiLanguage } from '@/lib/i18n/languages';
 
 /** Response shapes of the account and order APIs. Money is in paise; dates are ISO strings. */
 
@@ -179,6 +180,8 @@ export interface Address {
   city: string;
   state: string;
   pincode: string;
+  /** ISO 3166-1 alpha-2, e.g. IN. */
+  country: string;
   isDefault: boolean;
   delivery: { serviceable: boolean; codAvailable: boolean; estimatedDeliveryDays: number | null };
 }
@@ -192,6 +195,7 @@ export interface AddressInput {
   line2?: string;
   landmark?: string;
   pincode: string;
+  country: string;
   city: string;
   state: string;
   isDefault?: boolean;
@@ -419,7 +423,7 @@ export interface AffiliateSummary {
     confirmedPaise: number;
     paidPaise: number;
   };
-  rules: { commissionPercent: number; attributionDays: number };
+  rules: { commissionPercent: number; attributionDays: number; referralRewardPaise: number };
 }
 
 export interface AffiliateLink {
@@ -480,4 +484,60 @@ export interface TicketDetail extends TicketSummary {
     createdAt: string;
     attachments: Array<{ id: string; fileName: string; contentType: string; sizeBytes: number }>;
   }>;
+}
+
+/* Account settings (3.11) */
+
+export type Gender = 'FEMALE' | 'MALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+export type NotificationChannel = 'sms' | 'email' | 'whatsapp' | 'push';
+export type NotificationEvent =
+  | 'orders'
+  | 'delivery'
+  | 'returns'
+  | 'priceAlerts'
+  | 'offers'
+  | 'account';
+export type NotificationChoices = Record<NotificationEvent, Record<NotificationChannel, boolean>>;
+
+export interface SettingsProfile {
+  fullName: string;
+  email: string;
+  mobile: string;
+  emailVerified: boolean;
+  mobileVerified: boolean;
+  dateOfBirth: string | null;
+  gender: Gender | null;
+  preferredLanguage: ApiLanguage;
+  hasPassword: boolean;
+  passwordChangedAt: string | null;
+  memberSince: string;
+}
+
+export interface SettingsOverview {
+  profile: SettingsProfile;
+  notifications: { channels: NotificationChoices; locked: NotificationEvent[] };
+  deletion: {
+    blockers: string[];
+    walletBalancePaise: number;
+    coins: number;
+    retentionYears: number;
+  };
+}
+
+export interface ProfileInput {
+  fullName?: string;
+  dateOfBirth?: string | null;
+  gender?: Gender | null;
+  preferredLanguage?: ApiLanguage;
+}
+
+export interface ActiveSession {
+  id: string;
+  browser: string;
+  os: string;
+  mobile: boolean;
+  ip: string | null;
+  signedInAt: string;
+  lastActiveAt: string;
+  current: boolean;
 }

@@ -96,9 +96,14 @@ async function errorFrom(response: Response): Promise<ApiError> {
 }
 
 /** Downloads a signed-in file (for example an invoice PDF) and saves it in the browser. */
-export async function apiDownload(path: string, fallbackFileName: string): Promise<void> {
+export async function apiDownload(
+  path: string,
+  fallbackFileName: string,
+  method: 'GET' | 'POST' = 'GET',
+): Promise<void> {
   const send = (token: string | null) =>
     fetch(`${API_BASE}${path}`, {
+      method,
       credentials: 'include',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Dialog } from '@/design-system';
 import { Icon } from '@/features/home/components/Icon';
 import { ApiError } from '@/lib/http';
+import { countryName } from '@/lib/location';
 import { formatInternational } from '@/lib/phone';
 import { accountApi } from './api';
 import { AddressForm } from './components/AddressForm';
@@ -54,16 +55,25 @@ function AddressCard({
           </>
         )}
         <br />
-        {address.city}, {address.state} {address.pincode}
+        {address.city}
+        {address.state && `, ${address.state}`} {address.pincode}
+        {address.country && address.country !== 'IN' && (
+          <>
+            <br />
+            {countryName(address.country, 'en', address.country)}
+          </>
+        )}
         <br />
         <span className="text-slate-500">Mobile {formatInternational(address.mobile)}</span>
       </address>
       <p className="mt-3 text-xs text-slate-500">
-        {address.delivery.serviceable
-          ? `Delivery in ${address.delivery.estimatedDeliveryDays ?? 'a few'} days${
-              address.delivery.codAvailable ? ' · Cash on delivery available' : ''
-            }`
-          : 'Delivery to this pincode is confirmed at checkout'}
+        {address.country && address.country !== 'IN'
+          ? 'Saved for later: we deliver within India for now'
+          : address.delivery.serviceable
+            ? `Delivery in ${address.delivery.estimatedDeliveryDays ?? 'a few'} days${
+                address.delivery.codAvailable ? ' · Cash on delivery available' : ''
+              }`
+            : 'Delivery to this pincode is confirmed at checkout'}
       </p>
       <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
         <button type="button" className={secondaryAction} onClick={onEdit} disabled={busy}>

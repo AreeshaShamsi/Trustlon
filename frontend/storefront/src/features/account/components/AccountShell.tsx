@@ -9,24 +9,27 @@ import { HomeFooter } from '@/features/home/components/HomeFooter';
 import { HomeHeader } from '@/features/home/components/HomeHeader';
 import { MarketplaceDialogs } from '@/features/home/components/MarketplaceDialogs';
 import { useHome } from '@/features/home/home-provider';
+import type { Dictionary } from '@/lib/i18n/en';
+import { useI18n } from '@/lib/i18n/language-provider';
 import { Skeleton } from './ui';
 
-type NavItem = { label: string; href: string; count?: 'wishlist' } | { label: string; soon: true };
+type NavKey = Exclude<keyof Dictionary['accountNav'], 'label' | 'signOut'>;
+type NavItem = { key: NavKey; href: string; count?: 'wishlist' };
 
-/** Sections from the build spec. Items marked soon are listed so customers know they are coming. */
+/** Sections from the build spec. Labels come from the language dictionary. */
 const NAV: NavItem[] = [
-  { label: 'Overview', href: '/account' },
-  { label: 'Orders', href: '/account/orders' },
-  { label: 'Returns', href: '/account/returns' },
-  { label: 'Wishlist', href: '/account/wishlist', count: 'wishlist' },
-  { label: 'Price alerts', href: '/account/price-alerts' },
-  { label: 'Addresses', href: '/account/addresses' },
-  { label: 'Wallet', href: '/account/wallet' },
-  { label: 'Reviews', href: '/account/reviews' },
-  { label: 'B2B', href: '/account/b2b' },
-  { label: 'Refer and earn', href: '/account/affiliate' },
-  { label: 'Support', href: '/account/support' },
-  { label: 'Settings', soon: true },
+  { key: 'overview', href: '/account' },
+  { key: 'orders', href: '/account/orders' },
+  { key: 'returns', href: '/account/returns' },
+  { key: 'wishlist', href: '/account/wishlist', count: 'wishlist' },
+  { key: 'priceAlerts', href: '/account/price-alerts' },
+  { key: 'addresses', href: '/account/addresses' },
+  { key: 'wallet', href: '/account/wallet' },
+  { key: 'reviews', href: '/account/reviews' },
+  { key: 'b2b', href: '/account/b2b' },
+  { key: 'refer', href: '/account/affiliate' },
+  { key: 'support', href: '/account/support' },
+  { key: 'settings', href: '/account/settings' },
 ];
 
 const itemClass =
@@ -35,6 +38,7 @@ const itemClass =
 function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
   const pathname = usePathname();
   const home = useHome();
+  const { t } = useI18n();
 
   const isActive = (href: string) =>
     href === '/account'
@@ -42,48 +46,33 @@ function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
       : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <nav aria-label="My account" className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+    <nav aria-label={t.accountNav.label} className="min-w-0 lg:sticky lg:top-6 lg:self-start">
       <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2 lg:mx-0 lg:block lg:space-y-0.5 lg:overflow-visible lg:rounded-lg lg:border lg:border-slate-200 lg:bg-white lg:p-2">
         {NAV.map((item) => (
-          <li key={item.label} className={'soon' in item ? 'hidden lg:block' : undefined}>
-            {'href' in item ? (
-              <Link
-                href={item.href}
-                aria-current={isActive(item.href) ? 'page' : undefined}
-                className={cn(
-                  itemClass,
-                  focusRing,
-                  isActive(item.href)
-                    ? 'bg-navy font-semibold text-white'
-                    : 'bg-white text-navy hover:bg-navy-50 lg:bg-transparent',
-                )}
-              >
-                {item.label}
-                {item.count === 'wishlist' && home.wishlist.length > 0 && (
-                  <span
-                    className={cn(
-                      'rounded-full px-2 text-xs',
-                      isActive(item.href) ? 'bg-white/15 text-white' : 'bg-teal-50 text-teal-600',
-                    )}
-                  >
-                    {home.wishlist.length}
-                  </span>
-                )}
-              </Link>
-            ) : (
-              <span
-                aria-disabled="true"
-                className={cn(
-                  itemClass,
-                  'cursor-default bg-white text-slate-400 lg:bg-transparent',
-                )}
-              >
-                {item.label}
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                  Soon
+          <li key={item.key}>
+            <Link
+              href={item.href}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+              className={cn(
+                itemClass,
+                focusRing,
+                isActive(item.href)
+                  ? 'bg-navy font-semibold text-white'
+                  : 'bg-white text-navy hover:bg-navy-50 lg:bg-transparent',
+              )}
+            >
+              {t.accountNav[item.key]}
+              {item.count === 'wishlist' && home.wishlist.length > 0 && (
+                <span
+                  className={cn(
+                    'rounded-full px-2 text-xs',
+                    isActive(item.href) ? 'bg-white/15 text-white' : 'bg-teal-50 text-teal-600',
+                  )}
+                >
+                  {home.wishlist.length}
                 </span>
-              </span>
-            )}
+              )}
+            </Link>
           </li>
         ))}
         <li className="lg:mt-2 lg:border-t lg:border-slate-100 lg:pt-2">
@@ -96,7 +85,7 @@ function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
               'bg-white text-slate-600 hover:bg-navy-50 lg:bg-transparent',
             )}
           >
-            Sign out
+            {t.accountNav.signOut}
           </button>
         </li>
       </ul>

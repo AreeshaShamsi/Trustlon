@@ -136,6 +136,7 @@ export function ResetStepper() {
               label={t.fields.newPassword}
               autoComplete="new-password"
               showLabel={t.common.show}
+              capsLockLabel={t.common.capsLock}
               hideLabel={t.common.hide}
               error={pwForm.formState.errors.newPassword?.message}
               {...pwForm.register('newPassword')}
@@ -146,6 +147,7 @@ export function ResetStepper() {
             label={t.fields.confirmNewPassword}
             autoComplete="new-password"
             showLabel={t.common.show}
+            capsLockLabel={t.common.capsLock}
             hideLabel={t.common.hide}
             error={pwForm.formState.errors.confirmPassword?.message}
             {...pwForm.register('confirmPassword')}

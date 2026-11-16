@@ -10,6 +10,7 @@ export const en = {
     show: 'Show',
     hide: 'Hide',
     stepOf: 'Step {current} of {total}',
+    capsLock: 'Caps Lock is on',
   },
   brandPanel: {
     headline: 'Shop with confidence. Sell with trust.',
@@ -26,6 +27,7 @@ export const en = {
     terms: 'Terms',
     privacy: 'Privacy',
     help: 'Help',
+    sell: 'Sell on Trustlon',
   },
   fields: {
     fullName: 'Full name',
@@ -41,12 +43,14 @@ export const en = {
   placeholders: {
     fullName: 'First and last name',
     email: 'you@example.com',
-    mobile: 'Mobile number',
+    mobile: '10-digit mobile number',
   },
   validation: {
     fullName: 'Enter your full name (2 to 100 characters)',
     email: 'Enter a valid email address',
-    mobile: 'Enter a valid mobile number for the selected country',
+    mobile: 'Enter a valid 10-digit Indian mobile number',
+    nameLetters: 'Use letters only (spaces, dots and hyphens are fine)',
+    emailTypo: 'Did you mean',
     password: 'Your password does not meet all the requirements',
     passwordRequired: 'Enter your password',
     passwordsMismatch: 'Passwords do not match',
@@ -60,6 +64,12 @@ export const en = {
     upper: 'An uppercase letter',
     lower: 'A lowercase letter',
     number: 'A number',
+    strength: 'Password strength: {level}',
+    weak: 'Weak',
+    fair: 'Fair',
+    good: 'Good',
+    strong: 'Strong',
+    tip: 'Tip: 12 or more characters with a symbol is strongest.',
   },
   identifier: {
     useMobile: 'Use mobile number instead',
@@ -82,6 +92,7 @@ export const en = {
     stepEmail: 'Verify email',
     stepMobile: 'Verify mobile',
     referralToggle: 'Have a referral code?',
+    referralApplied: 'Code added from your invite link.',
     termsPrefix: "I agree to Trustlon's",
     terms: 'Terms of Service',
     and: 'and',
@@ -119,6 +130,22 @@ export const en = {
     save: 'Update password',
     backToLogin: 'Back to sign in',
   },
+  accountNav: {
+    label: 'My account',
+    overview: 'Overview',
+    orders: 'Orders',
+    returns: 'Returns',
+    wishlist: 'Wishlist',
+    priceAlerts: 'Price alerts',
+    addresses: 'Addresses',
+    wallet: 'Wallet',
+    reviews: 'Reviews',
+    b2b: 'B2B',
+    refer: 'Refer and earn',
+    support: 'Support',
+    settings: 'Settings',
+    signOut: 'Sign out',
+  },
   home: {
     welcome: 'Welcome, {name}',
     guest: 'You are browsing as a guest.',
@@ -128,3 +155,7 @@ export const en = {
 
 type DeepStringRecord<T> = { [K in keyof T]: T[K] extends string ? string : DeepStringRecord<T[K]> };
 export type Dictionary = DeepStringRecord<typeof en>;
+
+type DeepPartial<T> = { [K in keyof T]?: T[K] extends string ? string : DeepPartial<T[K]> };
+/** Other languages may leave strings out; English fills the gaps. */
+export type PartialDictionary = DeepPartial<Dictionary>;

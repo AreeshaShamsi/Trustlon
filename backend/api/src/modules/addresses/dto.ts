@@ -9,46 +9,10 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { PERSON_NAME, PERSON_NAME_MESSAGE } from '../../common/utils/identifier';
 
-/** States and union territories of India, as used on delivery addresses. */
-export const INDIAN_STATES = [
-  'Andaman and Nicobar Islands',
-  'Andhra Pradesh',
-  'Arunachal Pradesh',
-  'Assam',
-  'Bihar',
-  'Chandigarh',
-  'Chhattisgarh',
-  'Dadra and Nagar Haveli and Daman and Diu',
-  'Delhi',
-  'Goa',
-  'Gujarat',
-  'Haryana',
-  'Himachal Pradesh',
-  'Jammu and Kashmir',
-  'Jharkhand',
-  'Karnataka',
-  'Kerala',
-  'Ladakh',
-  'Lakshadweep',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Odisha',
-  'Puducherry',
-  'Punjab',
-  'Rajasthan',
-  'Sikkim',
-  'Tamil Nadu',
-  'Telangana',
-  'Tripura',
-  'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal',
-] as const;
+/** Kept here for older imports; the list lives with the other address rules. */
+export { INDIAN_STATES } from '../location/address-rules';
 
 export const ADDRESS_LABELS = ['HOME', 'WORK', 'OTHER'] as const;
 
@@ -73,9 +37,10 @@ export class AddressDto {
   @Transform(trim)
   @IsString()
   @Length(2, 100, { message: 'Enter the full name of the person receiving the order' })
+  @Matches(PERSON_NAME, { message: PERSON_NAME_MESSAGE })
   fullName!: string;
 
-  /** Indian mobile number, with or without +91. */
+  /** Indian mobile for Indian addresses; a number from the address's country otherwise. */
   @Transform(trim)
   @IsString()
   @MaxLength(20)
@@ -98,8 +63,16 @@ export class AddressDto {
   @MaxLength(80)
   landmark?: string;
 
+  /** ISO 3166-1 alpha-2 country. India (IN) when left out. */
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @Matches(/^[A-Z]{2}$/, { message: 'Choose a country' })
+  country?: string;
+
+  /** Pincode for India; the postal or ZIP code elsewhere. Checked per country in the service. */
   @Transform(trim)
-  @Matches(/^[1-9][0-9]{5}$/, { message: 'Enter a valid six-digit pincode' })
+  @IsString()
+  @MaxLength(12)
   pincode!: string;
 
   @Transform(trim)
@@ -107,8 +80,12 @@ export class AddressDto {
   @Length(2, 80, { message: 'Enter the city or town' })
   city!: string;
 
-  @IsIn(INDIAN_STATES, { message: 'Choose a state from the list' })
-  state!: string;
+  /** Checked against the country's list of states in the service. */
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(60)
+  state?: string;
 
   @IsOptional()
   @IsBoolean()

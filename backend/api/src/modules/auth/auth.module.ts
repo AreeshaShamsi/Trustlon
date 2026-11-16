@@ -10,6 +10,6 @@ import { SessionService } from './services/session.service';
   imports: [NotificationsModule],
   controllers: [AuthController],
   providers: [AuthService, OtpService, SessionService, RefreshCookie],
-  exports: [SessionService],
+  exports: [SessionService, OtpService, RefreshCookie],
 })
 export class AuthModule {}

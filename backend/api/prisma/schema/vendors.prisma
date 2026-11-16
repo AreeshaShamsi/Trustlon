@@ -43,3 +43,31 @@ model Vendor {
   @@index([pickupPincode])
   @@map("vendors")
 }
+
+enum VendorLeadStatus {
+  NEW
+  CONTACTED
+  ONBOARDED
+  REJECTED
+}
+
+/// A business that asked to sell on Trustlon from the /sell page (3.12). Vendor onboarding (4.1)
+/// turns it into a Vendor after KYC.
+model VendorLead {
+  id           String           @id @default(uuid()) @db.Uuid
+  contactName  String           @map("contact_name") @db.VarChar(100)
+  businessName String           @map("business_name") @db.VarChar(160)
+  mobile       String           @db.VarChar(16)
+  email        String           @db.VarChar(254)
+  city         String           @db.VarChar(80)
+  /// Main category the business sells in.
+  categoryId   String?          @map("category_id") @db.Uuid
+  gstin        String?          @db.VarChar(15)
+  status       VendorLeadStatus @default(NEW)
+  ip           String?          @db.VarChar(45)
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  @@index([status, createdAt])
+  @@index([mobile])
+  @@map("vendor_leads")
+}

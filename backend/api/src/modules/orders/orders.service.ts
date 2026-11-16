@@ -31,6 +31,18 @@ import {
   toOrderSummary,
 } from './order.presenter';
 
+/**
+ * Emitted when a courier confirms delivery of a sub-order (logistics webhooks, Phase 5).
+ * Referral rewards, Trustlon Coins and review reminders listen for it.
+ */
+export const SUB_ORDER_DELIVERED = 'order.sub-order.delivered';
+
+export interface SubOrderDeliveredEvent {
+  userId: string;
+  orderId: string;
+  subOrderId: string;
+}
+
 /** Emitted after a customer cancels part of an order; notifications and payouts listen for it. */
 export const SUB_ORDER_CANCELLED = 'order.sub-order.cancelled';
 

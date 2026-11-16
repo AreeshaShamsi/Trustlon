@@ -12,6 +12,10 @@ interface AuthContextValue {
   /** Call with the response of signup, login or OTP login. */
   startSession: (session: SessionResponse) => void;
   logout: () => Promise<void>;
+  /** Keeps the header and menus in step after the customer edits their profile. */
+  updateUser: (changes: Partial<PublicUser>) => void;
+  /** Clears the session locally, e.g. after the account was deleted on the server. */
+  endSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -77,9 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [endSession]);
 
+  const updateUser = useCallback((changes: Partial<PublicUser>) => {
+    setUser((current) => (current ? { ...current, ...changes } : current));
+  }, []);
+
   const value = useMemo(
-    () => ({ status, user, startSession, logout }),
-    [status, user, startSession, logout],
+    () => ({ status, user, startSession, logout, updateUser, endSession }),
+    [status, user, startSession, logout, updateUser, endSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

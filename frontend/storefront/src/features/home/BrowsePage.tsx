@@ -21,7 +21,6 @@ const informational: Record<string, string> = {
   about: 'About Trustlon',
   story: 'Our story',
   careers: 'Careers at Trustlon',
-  sell: 'Sell on Trustlon',
   returns: 'Returns & refunds',
   contact: 'Contact Trustlon',
   privacy: 'Privacy policy',

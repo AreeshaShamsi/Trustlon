@@ -1,10 +1,20 @@
 'use client';
-import { useEffect, useId, useState } from 'react';
-import { Alert, Button, cn, Dialog, focusRing, inputClass, TextField } from '@/design-system';
+import { useEffect, useState } from 'react';
+import {
+  CityField,
+  CountrySelect,
+  PincodeField,
+  StateField,
+  useCountries,
+} from '@/components/location';
+import { Alert, Button, cn, Dialog, MobileField, TextField } from '@/design-system';
 import { homeApi } from '@/features/home/api';
 import { ApiError } from '@/lib/http';
+import { postalCodeValid, type CountryInfo } from '@/lib/location';
+import { formatInternational } from '@/lib/phone';
+import { isValidName, mobileDigits, PINCODE_PATTERN, toIndianMobile } from '@/lib/validation';
 import { accountApi } from '../api';
-import { ADDRESS_LABELS, INDIAN_STATES } from '../format';
+import { ADDRESS_LABELS } from '../format';
 import type { Address, AddressInput, AddressLabel } from '../types';
 
 type Errors = Partial<Record<keyof AddressInput, string>>;
@@ -18,6 +28,7 @@ const EMPTY: AddressInput = {
   line2: '',
   landmark: '',
   pincode: '',
+  country: 'IN',
   city: '',
   state: '',
   isDefault: false,
@@ -28,29 +39,42 @@ function fromAddress(address: Address): AddressInput {
     label: address.label,
     labelName: address.labelName ?? '',
     fullName: address.fullName,
-    mobile: address.mobile.replace(/^\+91/, ''),
+    mobile:
+      (address.country ?? 'IN') === 'IN'
+        ? mobileDigits(address.mobile)
+        : formatInternational(address.mobile),
     line1: address.line1,
     line2: address.line2 ?? '',
     landmark: address.landmark ?? '',
     pincode: address.pincode,
+    country: address.country ?? 'IN',
     city: address.city,
     state: address.state,
     isDefault: address.isDefault,
   };
 }
 
-function validate(values: AddressInput): Errors {
+function validate(values: AddressInput, country: CountryInfo | undefined): Errors {
   const errors: Errors = {};
-  if (values.fullName.trim().length < 2)
-    errors.fullName = 'Enter the full name of the person receiving the order';
-  if (!/^(\+?91)?[6-9]\d{9}$/.test(values.mobile.replace(/[\s-]/g, ''))) {
-    errors.mobile = 'Enter a valid 10-digit Indian mobile number';
+  const india = values.country === 'IN';
+  if (!isValidName(values.fullName)) {
+    errors.fullName = 'Enter the receiver’s full name (letters only)';
+  }
+  if (india ? !toIndianMobile(values.mobile) : values.mobile.replace(/\D/g, '').length < 6) {
+    errors.mobile = india
+      ? 'Enter a valid 10-digit Indian mobile number'
+      : 'Enter the phone number with country code, e.g. +1 650 253 0000';
   }
   if (values.line1.trim().length < 3) errors.line1 = 'Enter the house number and street';
-  if (!/^[1-9]\d{5}$/.test(values.pincode.trim()))
-    errors.pincode = 'Enter a valid six-digit pincode';
+  if (
+    india ? !PINCODE_PATTERN.test(values.pincode.trim()) : !postalCodeValid(country, values.pincode)
+  ) {
+    errors.pincode = india
+      ? 'Enter a valid six-digit pincode'
+      : `Enter a valid ${(country?.postalLabel ?? 'postal code').toLowerCase()}${country?.postalExample ? `, e.g. ${country.postalExample}` : ''}`;
+  }
   if (values.city.trim().length < 2) errors.city = 'Enter the city or town';
-  if (!values.state) errors.state = 'Choose a state';
+  if (!values.state && (country?.stateRequired ?? india)) errors.state = 'Choose a state';
   if (values.label === 'OTHER' && (values.labelName ?? '').trim().length < 2) {
     errors.labelName = 'Give this address a name, e.g. Parents’ home';
   }
@@ -70,7 +94,7 @@ export function AddressForm({
   onClose: () => void;
   onSaved: (items: Address[]) => void;
 }) {
-  const stateId = useId();
+  const countries = useCountries();
   const [values, setValues] = useState<AddressInput>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -85,10 +109,13 @@ export function AddressForm({
     setPincodeNote(null);
   }, [open, address]);
 
-  // Look up the pincode once six digits are typed.
+  const india = values.country === 'IN';
+  const country = countries?.find((c) => c.code === values.country);
+
+  // Delivery estimate for Indian pincodes.
   useEffect(() => {
     const pincode = values.pincode.trim();
-    if (!open || !/^[1-9]\d{5}$/.test(pincode)) {
+    if (!open || !india || !PINCODE_PATTERN.test(pincode)) {
       setPincodeNote(null);
       return;
     }
@@ -97,13 +124,6 @@ export function AddressForm({
       .serviceability(pincode)
       .then((result) => {
         if (cancelled) return;
-        if (result.city && result.state) {
-          setValues((current) => ({
-            ...current,
-            city: result.city ?? current.city,
-            state: result.state ?? current.state,
-          }));
-        }
         setPincodeNote(
           result.serviceable
             ? `Delivers in ${result.estimatedDeliveryDays ?? 'a few'} days${result.codAvailable ? ' · Cash on delivery available' : ''}`
@@ -114,7 +134,7 @@ export function AddressForm({
     return () => {
       cancelled = true;
     };
-  }, [values.pincode, open]);
+  }, [values.pincode, open, india]);
 
   const set = <K extends keyof AddressInput>(key: K, value: AddressInput[K]) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -123,7 +143,7 @@ export function AddressForm({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const found = validate(values);
+    const found = validate(values, country);
     setErrors(found);
     if (Object.keys(found).length) return;
 
@@ -132,7 +152,7 @@ export function AddressForm({
     const input: AddressInput = {
       ...values,
       labelName: values.label === 'OTHER' ? values.labelName?.trim() : undefined,
-      mobile: values.mobile.replace(/[\s-]/g, ''),
+      mobile: india ? (toIndianMobile(values.mobile) ?? values.mobile) : values.mobile.trim(),
     };
     try {
       const result = address
@@ -202,19 +222,46 @@ export function AddressForm({
             onChange={(e) => set('fullName', e.target.value)}
             error={errors.fullName}
           />
-          <TextField
-            label="Mobile number"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel-national"
-            placeholder="10-digit mobile number"
-            maxLength={14}
-            value={values.mobile}
-            onChange={(e) => set('mobile', e.target.value)}
-            error={errors.mobile}
-            hint="Used by the courier to reach you"
-          />
+          {india ? (
+            <MobileField
+              label="Mobile number"
+              placeholder="10-digit mobile number"
+              value={values.mobile}
+              onChange={(e) => set('mobile', e.target.value)}
+              error={errors.mobile}
+              hint="Used by the courier to reach you"
+            />
+          ) : (
+            <TextField
+              label="Phone number"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="With country code, e.g. +1 650 253 0000"
+              maxLength={20}
+              value={values.mobile}
+              onChange={(e) => set('mobile', e.target.value)}
+              error={errors.mobile}
+              hint="Used by the courier to reach the receiver"
+            />
+          )}
         </div>
+        <CountrySelect
+          countries={countries}
+          value={values.country}
+          error={errors.country}
+          onChange={(code) => {
+            setValues((current) => ({
+              ...current,
+              country: code,
+              state: '',
+              pincode: '',
+              city: current.country === code ? current.city : '',
+              mobile: '',
+            }));
+            setErrors({});
+          }}
+        />
         <TextField
           label="House number, building and street"
           autoComplete="address-line1"
@@ -238,49 +285,60 @@ export function AddressForm({
           onChange={(e) => set('landmark', e.target.value)}
         />
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField
-            label="Pincode"
-            inputMode="numeric"
-            autoComplete="postal-code"
-            maxLength={6}
-            value={values.pincode}
-            onChange={(e) => set('pincode', e.target.value.replace(/\D/g, ''))}
-            error={errors.pincode}
-          />
-          <TextField
-            label="City"
-            autoComplete="address-level2"
-            maxLength={80}
+          {india ? (
+            <PincodeField
+              value={values.pincode}
+              error={errors.pincode}
+              onChange={(text) => set('pincode', text)}
+              onResolved={(place) => {
+                if (!place) return;
+                setValues((current) => ({
+                  ...current,
+                  pincode: place.pincode,
+                  city: place.city,
+                  state: place.state,
+                  line2: current.line2 || place.area || '',
+                }));
+                setErrors((current) => ({
+                  ...current,
+                  pincode: undefined,
+                  city: undefined,
+                  state: undefined,
+                }));
+              }}
+            />
+          ) : (
+            <TextField
+              label={country?.postalLabel ?? 'Postal code'}
+              autoComplete="postal-code"
+              maxLength={12}
+              placeholder={country?.postalExample || undefined}
+              value={values.pincode}
+              onChange={(e) => set('pincode', e.target.value.toUpperCase())}
+              error={errors.pincode}
+            />
+          )}
+          <CityField
+            country={values.country}
             value={values.city}
-            onChange={(e) => set('city', e.target.value)}
+            onChange={(value) => set('city', value)}
             error={errors.city}
           />
-          <div>
-            <label htmlFor={stateId} className="mb-1.5 block text-sm font-medium text-navy">
-              State
-            </label>
-            <select
-              id={stateId}
-              value={values.state}
-              autoComplete="address-level1"
-              onChange={(e) => set('state', e.target.value)}
-              aria-invalid={Boolean(errors.state) || undefined}
-              className={cn(inputClass(Boolean(errors.state)), focusRing)}
-            >
-              <option value="">Choose</option>
-              {INDIAN_STATES.map((state) => (
-                <option key={state} value={state}>
-                  {state}
-                </option>
-              ))}
-            </select>
-            {errors.state && (
-              <p role="alert" className="mt-1.5 text-xs text-red-600">
-                {errors.state}
-              </p>
-            )}
-          </div>
+          <StateField
+            country={values.country}
+            label={india ? 'State' : 'State or province'}
+            optional={!(country?.stateRequired ?? india)}
+            value={values.state}
+            onChange={(value) => set('state', value)}
+            error={errors.state}
+          />
         </div>
+        {!india && (
+          <Alert tone="info">
+            Addresses outside India are saved for later. Orders and return pickups are delivered
+            within India for now.
+          </Alert>
+        )}
         {pincodeNote && <p className="text-xs text-teal-600">{pincodeNote}</p>}
         {!address?.isDefault && (
           <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-navy">

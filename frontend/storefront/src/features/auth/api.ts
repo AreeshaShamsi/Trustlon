@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/http';
+import type { ApiLanguage } from '@/lib/i18n/languages';
 
 export type OtpPurpose = 'SIGNUP' | 'LOGIN' | 'RESET_PASSWORD';
 
@@ -9,7 +10,7 @@ export interface PublicUser {
   email: string;
   country: string | null;
   role: string;
-  preferredLanguage: 'EN' | 'HI';
+  preferredLanguage: ApiLanguage;
   referralCode: string;
   hasPassword: boolean;
   mobileVerified: boolean;
@@ -41,7 +42,7 @@ export interface SignupDetails {
   password: string;
   country?: string;
   referralCode?: string;
-  preferredLanguage?: 'EN' | 'HI';
+  preferredLanguage?: ApiLanguage;
   marketingOptIn: boolean;
   acceptTerms: true;
 }

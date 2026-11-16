@@ -3,11 +3,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Alert, Button, Checkbox, PasswordField, PhoneField, TextField } from '@/components/ui';
+import { Alert, Button, Checkbox, MobileField, PasswordField, TextField } from '@/components/ui';
 import { toApiLanguage, useI18n } from '@/lib/i18n/language-provider';
-import { DEFAULT_COUNTRY, detectCountry, isCountryCode } from '@/lib/phone';
+import { DEFAULT_COUNTRY } from '@/lib/phone';
+import { suggestEmail } from '@/lib/validation';
 import { authApi, type SignupDetails } from '../api';
 import { useAuth } from '../auth-provider';
 import { safeNextPath, signupMobile, signupSchema, type SignupValues } from '../schemas';
@@ -54,11 +55,9 @@ export function SignupForm() {
   const { register, handleSubmit, watch, setValue, setError, formState } = form;
   const errors = formState.errors;
   const password = watch('password');
-  const mobileCountry = watch('mobileCountry');
+  const email = watch('email');
+  const emailSuggestion = useMemo(() => suggestEmail(email), [email]);
 
-  useEffect(() => {
-    setValue('mobileCountry', detectCountry());
-  }, [setValue]);
 
   const submitDetails = handleSubmit(async (values) => {
     clear();
@@ -196,16 +195,24 @@ export function SignupForm() {
           autoComplete="email"
           placeholder={t.placeholders.email}
           error={errors.email?.message}
+          hint={
+            emailSuggestion ? (
+              <span>
+                {t.validation.emailTypo}{' '}
+                <button
+                  type="button"
+                  className="font-semibold text-teal-600 underline underline-offset-2"
+                  onClick={() => setValue('email', emailSuggestion, { shouldValidate: true })}
+                >
+                  {emailSuggestion}
+                </button>
+              </span>
+            ) : undefined
+          }
           {...register('email')}
         />
-        <PhoneField
+        <MobileField
           label={t.fields.mobile}
-          countryLabel={t.fields.country}
-          locale={language}
-          country={isCountryCode(mobileCountry) ? mobileCountry : DEFAULT_COUNTRY}
-          onCountryChange={(country) =>
-            setValue('mobileCountry', country, { shouldValidate: formState.isSubmitted })
-          }
           placeholder={t.placeholders.mobile}
           error={errors.mobileNational?.message}
           {...register('mobileNational')}
@@ -215,6 +222,7 @@ export function SignupForm() {
             label={t.fields.password}
             autoComplete="new-password"
             showLabel={t.common.show}
+            capsLockLabel={t.common.capsLock}
             hideLabel={t.common.hide}
             error={errors.password?.message}
             {...register('password', { deps: formState.touchedFields.confirmPassword ? ['confirmPassword'] : [] })}
@@ -225,6 +233,7 @@ export function SignupForm() {
           label={t.fields.confirmPassword}
           autoComplete="new-password"
           showLabel={t.common.show}
+          capsLockLabel={t.common.capsLock}
           hideLabel={t.common.hide}
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
@@ -234,6 +243,7 @@ export function SignupForm() {
           <TextField
             label={t.fields.referralCode}
             autoCapitalize="characters"
+            hint={initialReferral ? t.signup.referralApplied : undefined}
             error={errors.referralCode?.message}
             {...register('referralCode')}
           />
@@ -254,11 +264,11 @@ export function SignupForm() {
             label={
               <>
                 {t.signup.termsPrefix}{' '}
-                <Link href="/pages/terms" target="_blank" className="font-medium text-navy underline underline-offset-2">
+                <Link href="/browse/terms" target="_blank" className="font-medium text-navy underline underline-offset-2">
                   {t.signup.terms}
                 </Link>{' '}
                 {t.signup.and}{' '}
-                <Link href="/pages/privacy" target="_blank" className="font-medium text-navy underline underline-offset-2">
+                <Link href="/browse/privacy" target="_blank" className="font-medium text-navy underline underline-offset-2">
                   {t.signup.privacy}
                 </Link>
               </>

@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useId, useState } from 'react';
-import { Alert, Button, cn, focusRing, inputClass, TextField } from '@/design-system';
+import { useEffect, useState } from 'react';
+import { Alert, Button, cn, TextField } from '@/design-system';
 import { Icon } from '@/features/home/components/Icon';
 import { ApiError } from '@/lib/http';
 import { accountApi } from './api';
 import { EmptyState, PageHeader, Panel, Skeleton } from './components/ui';
-import { formatDate, INDIAN_STATES } from './format';
+import { formatDate } from './format';
+import { CityField, PincodeField, StateField } from '@/components/location';
 import type { BusinessProfile, BusinessProfileInput, GstinCheck } from './types';
 
 type Errors = Partial<Record<keyof BusinessProfileInput, string>>;
@@ -54,7 +55,6 @@ function fromProfile(profile: BusinessProfile): BusinessProfileInput {
 
 /** /account/b2b (spec 3.8). */
 export function BusinessPage() {
-  const stateId = useId();
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [tiers, setTiers] = useState<Array<{ minQuantity: number; label: string }>>([]);
   const [loaded, setLoaded] = useState(false);
@@ -273,45 +273,32 @@ export function BusinessPage() {
               onChange={(e) => set('billingLine2', e.target.value)}
             />
             <div className="grid gap-4 sm:grid-cols-3">
-              <TextField
-                label="Pincode"
-                inputMode="numeric"
-                maxLength={6}
+              <PincodeField
                 value={values.billingPincode}
-                onChange={(e) => set('billingPincode', e.target.value.replace(/\D/g, ''))}
                 error={errors.billingPincode}
+                onChange={(text) => set('billingPincode', text)}
+                onResolved={(place) => {
+                  if (!place) return;
+                  setValues((current) => ({
+                    ...current,
+                    billingPincode: place.pincode,
+                    billingCity: place.city,
+                    billingState: place.state,
+                  }));
+                }}
               />
-              <TextField
-                label="City"
-                maxLength={80}
+              <CityField
+                country="IN"
                 value={values.billingCity}
-                onChange={(e) => set('billingCity', e.target.value)}
+                onChange={(city) => set('billingCity', city)}
                 error={errors.billingCity}
               />
-              <div>
-                <label htmlFor={stateId} className="mb-1.5 block text-sm font-medium text-navy">
-                  State
-                </label>
-                <select
-                  id={stateId}
-                  value={values.billingState}
-                  onChange={(e) => set('billingState', e.target.value)}
-                  aria-invalid={Boolean(errors.billingState) || undefined}
-                  className={cn(inputClass(Boolean(errors.billingState)), focusRing)}
-                >
-                  <option value="">Choose</option>
-                  {INDIAN_STATES.map((state) => (
-                    <option key={state} value={state}>
-                      {state}
-                    </option>
-                  ))}
-                </select>
-                {errors.billingState && (
-                  <p role="alert" className="mt-1.5 text-xs text-red-600">
-                    {errors.billingState}
-                  </p>
-                )}
-              </div>
+              <StateField
+                country="IN"
+                value={values.billingState}
+                onChange={(state) => set('billingState', state)}
+                error={errors.billingState}
+              />
             </div>
             <div className="pt-2 sm:w-64">
               <Button type="submit" loading={saving}>

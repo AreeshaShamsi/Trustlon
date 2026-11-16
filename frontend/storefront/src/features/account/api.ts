@@ -1,5 +1,10 @@
 import { apiBlob, apiDownload, apiFetch, apiUpload } from '@/lib/http';
 import type {
+  ActiveSession,
+  NotificationChoices,
+  ProfileInput,
+  SettingsOverview,
+  SettingsProfile,
   AccountSummary,
   AffiliateEarning,
   AffiliateLink,
@@ -253,4 +258,49 @@ export const accountApi = {
   },
 
   ticketFile: (id: string) => apiBlob(`/tickets/attachments/${encodeURIComponent(id)}`),
+
+  settings: () => apiFetch<SettingsOverview>('/me/settings', { auth: true }),
+
+  updateProfile: (input: ProfileInput) =>
+    apiFetch<{ profile: SettingsProfile }>('/me', { method: 'PATCH', auth: true, body: input }),
+
+  sendContactCode: (type: 'email' | 'mobile', value: string, currentPassword?: string) =>
+    apiFetch<{ target: string; expiresInSeconds: number; resendAfterSeconds: number }>(
+      '/me/contact/otp',
+      { method: 'POST', auth: true, body: { type, value, currentPassword } },
+    ),
+
+  verifyContact: (type: 'email' | 'mobile', value: string, code: string) =>
+    apiFetch<{ profile: SettingsProfile }>('/me/contact/verify', {
+      method: 'POST',
+      auth: true,
+      body: { type, value, code },
+    }),
+
+  changePassword: (currentPassword: string | undefined, newPassword: string) =>
+    apiFetch<{ message: string; signedOutSessions: number }>('/me/password', {
+      method: 'POST',
+      auth: true,
+      body: { currentPassword, newPassword },
+    }),
+
+  sessions: () => apiFetch<{ items: ActiveSession[] }>('/me/sessions', { auth: true }),
+
+  revokeSession: (id: string) =>
+    apiFetch<void>(`/me/sessions/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+
+  revokeOtherSessions: () =>
+    apiFetch<{ revoked: number }>('/me/sessions', { method: 'DELETE', auth: true }),
+
+  updateNotifications: (channels: Partial<NotificationChoices>) =>
+    apiFetch<{ channels: NotificationChoices }>('/me/notification-preferences', {
+      method: 'PATCH',
+      auth: true,
+      body: { channels },
+    }),
+
+  exportData: () => apiDownload('/me/data-export', 'trustlon-my-data.json', 'POST'),
+
+  deleteAccount: (input: { confirm: string; currentPassword?: string; reason?: string }) =>
+    apiFetch<{ message: string }>('/me/delete', { method: 'POST', auth: true, body: input }),
 };

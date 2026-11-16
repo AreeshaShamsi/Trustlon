@@ -4,6 +4,7 @@ import { randomInt } from 'crypto';
 import { Page, toPage } from '../../common/http/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
 import { liveProductWhere } from '../catalog/catalog.queries';
+import { REFERRAL_REWARD_PAISE } from './referral.listener';
 
 /** Commission on affiliate sales, in basis points (500 = 5%). Finance can change this later (5.9). */
 export const AFFILIATE_COMMISSION_BPS = 500;
@@ -28,7 +29,7 @@ export interface AffiliateSummary {
     confirmedPaise: number;
     paidPaise: number;
   };
-  rules: { commissionPercent: number; attributionDays: number };
+  rules: { commissionPercent: number; attributionDays: number; referralRewardPaise: number };
 }
 
 export interface AffiliateLinkView {
@@ -100,6 +101,7 @@ export class AffiliateService {
       rules: {
         commissionPercent: AFFILIATE_COMMISSION_BPS / 100,
         attributionDays: ATTRIBUTION_DAYS,
+        referralRewardPaise: REFERRAL_REWARD_PAISE,
       },
     };
   }

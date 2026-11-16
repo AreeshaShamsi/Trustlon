@@ -1,3 +1,4 @@
+import type { CountryCode } from 'libphonenumber-js';
 import {
   BadRequestException,
   ConflictException,
@@ -5,7 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Address, AddressLabel, Prisma } from '@prisma/client';
-import { normalizePhone } from '../../common/utils/identifier';
+import { normalizeIndianMobile, normalizePhone } from '../../common/utils/identifier';
+import {
+  isCountryCode,
+  normalisePostalCode,
+  postalRule,
+  STATE_REQUIRED,
+  statesOf,
+} from '../location/address-rules';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PincodeService } from '../location/pincode.service';
 import { AddressDto } from './dto';
@@ -24,6 +32,7 @@ export interface AddressView {
   city: string;
   state: string;
   pincode: string;
+  country: string;
   isDefault: boolean;
   delivery: { serviceable: boolean; codAvailable: boolean; estimatedDeliveryDays: number | null };
 }
@@ -38,6 +47,7 @@ export interface AddressSnapshot {
   city: string;
   state: string;
   pincode: string;
+  country: string;
 }
 
 export function toAddressSnapshot(address: Address): AddressSnapshot {
@@ -50,6 +60,7 @@ export function toAddressSnapshot(address: Address): AddressSnapshot {
     city: address.city,
     state: address.state,
     pincode: address.pincode,
+    country: address.country,
   };
 }
 
@@ -135,15 +146,46 @@ export class AddressesService {
   }
 
   private async toData(dto: AddressDto) {
-    const mobile = normalizePhone(dto.mobile, 'IN');
-    if (!mobile || !mobile.startsWith('+91')) {
-      throw new BadRequestException({
-        message: 'Enter a valid Indian mobile number',
-        field: 'mobile',
-      });
+    const fail = (field: string, message: string) =>
+      new BadRequestException({ statusCode: 400, message, field });
+    const country = dto.country ?? 'IN';
+    if (!isCountryCode(country)) throw fail('country', 'Choose a country');
+    const india = country === 'IN';
+
+    const mobile = india
+      ? normalizeIndianMobile(dto.mobile)
+      : normalizePhone(dto.mobile, country as CountryCode);
+    if (!mobile) {
+      throw fail(
+        'mobile',
+        india
+          ? 'Enter a valid 10-digit Indian mobile number'
+          : 'Enter a valid phone number for this country',
+      );
     }
-    // Known pincodes fix the city and state, so addresses match the courier's data.
-    const known = await this.pincodes.find(dto.pincode);
+
+    const pincode = normalisePostalCode(country, dto.pincode);
+    if (pincode === null) {
+      const rule = postalRule(country);
+      throw fail(
+        'pincode',
+        india
+          ? 'Enter a valid six-digit pincode'
+          : `Enter a valid ${rule.label.toLowerCase()}${rule.example ? `, e.g. ${rule.example}` : ''}`,
+      );
+    }
+
+    // Known pincodes fix the city and state, so Indian addresses match the courier's data.
+    const known = india ? await this.pincodes.find(pincode) : null;
+    const states = statesOf(country);
+    let state = known?.state ?? (dto.state ?? '').trim();
+    if (state && states.length) {
+      const match = states.find((name) => name.toLowerCase() === state.toLowerCase());
+      if (!match) throw fail('state', 'Choose a state from the list');
+      state = match;
+    }
+    if (!state && STATE_REQUIRED.has(country)) throw fail('state', 'Choose a state');
+
     return {
       label: dto.label as AddressLabel,
       labelName: dto.label === 'OTHER' ? (dto.labelName ?? null) : null,
@@ -152,20 +194,23 @@ export class AddressesService {
       line1: dto.line1,
       line2: dto.line2 ?? null,
       landmark: dto.landmark ?? null,
-      pincode: dto.pincode,
+      pincode,
+      country,
       city: known?.city ?? dto.city,
-      state: known?.state ?? dto.state,
+      state,
     };
   }
 
   private async present(rows: Address[]): Promise<AddressView[]> {
-    const pincodes = [...new Set(rows.map((row) => row.pincode))];
+    const pincodes = [
+      ...new Set(rows.filter((row) => row.country === 'IN').map((row) => row.pincode)),
+    ];
     const known = pincodes.length
       ? await this.prisma.pincode.findMany({ where: { pincode: { in: pincodes } } })
       : [];
     const byPincode = new Map(known.map((row) => [row.pincode, row]));
     return rows.map((row) => {
-      const pin = byPincode.get(row.pincode);
+      const pin = row.country === 'IN' ? byPincode.get(row.pincode) : undefined;
       return {
         id: row.id,
         label: row.label,
@@ -178,6 +223,7 @@ export class AddressesService {
         city: row.city,
         state: row.state,
         pincode: row.pincode,
+        country: row.country,
         isDefault: row.isDefault,
         delivery: {
           serviceable: Boolean(pin?.serviceable),

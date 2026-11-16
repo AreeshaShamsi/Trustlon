@@ -1,26 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useI18n, type Language } from '@/lib/i18n/language-provider';
-
-function Logo({ inverted = false }: { inverted?: boolean }) {
-  return (
-    <Link href="/" className="inline-flex items-center gap-2" aria-label="Trustlon home">
-      <span
-        aria-hidden
-        className={`flex h-8 w-8 items-center justify-center rounded-lg ${inverted ? 'bg-white/10' : 'bg-navy'}`}
-      >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="#3ccbb4" strokeWidth="2.2">
-          <path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.4 7.5 9.5 4.4-1.1 7.5-4.9 7.5-9.5V6L12 3Z" />
-          <path d="m8.8 12.2 2.2 2.2 4.3-4.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
-      <span className={`text-lg font-bold tracking-tight ${inverted ? 'text-white' : 'text-navy'}`}>
-        Trustlon
-      </span>
-    </Link>
-  );
-}
+import { BrandLogo } from '@/components/BrandLogo';
+import { LANGUAGES, useI18n, type Language } from '@/lib/i18n/language-provider';
 
 const icons = {
   escrow: (
@@ -51,7 +33,7 @@ function BrandPanel() {
         }}
       />
       <div className="relative">
-        <Logo inverted />
+        <BrandLogo inverted />
       </div>
 
       <div className="relative max-w-md">
@@ -107,8 +89,11 @@ function LanguageSelect() {
         onChange={(event) => setLanguage(event.target.value as Language)}
         className="cursor-pointer appearance-none bg-transparent pr-1 outline-none"
       >
-        <option value="en">English</option>
-        <option value="hi">हिन्दी</option>
+        {LANGUAGES.map((option) => (
+          <option key={option.code} value={option.code} lang={option.code}>
+            {option.native}
+          </option>
+        ))}
       </select>
     </label>
   );
@@ -124,7 +109,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen flex-col">
         <header className="flex items-center justify-between px-6 py-5 sm:px-10">
           <span className="lg:invisible">
-            <Logo />
+            <BrandLogo />
           </span>
           <LanguageSelect />
         </header>
@@ -134,15 +119,18 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         </main>
 
         <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 pb-6 text-xs text-slate-500">
-          <Link href="/pages/terms" className="hover:text-navy">
-            {t.footer.terms}
-          </Link>
-          <Link href="/pages/privacy" className="hover:text-navy">
-            {t.footer.privacy}
-          </Link>
-          <Link href="/help" className="hover:text-navy">
-            {t.footer.help}
-          </Link>
+          {(
+            [
+              [t.footer.terms, '/browse/terms'],
+              [t.footer.privacy, '/browse/privacy'],
+              [t.footer.help, '/browse/help'],
+              [t.footer.sell, '/sell'],
+            ] as const
+          ).map(([label, href]) => (
+            <Link key={href} href={href} className="hover:text-navy">
+              {label}
+            </Link>
+          ))}
         </footer>
       </div>
     </div>

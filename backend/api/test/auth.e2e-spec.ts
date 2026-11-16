@@ -108,28 +108,40 @@ describe('Customer authentication (e2e)', () => {
 
   it('rejects sign-up when a verification token belongs to another address', async () => {
     const emailVerificationToken = await verifyFor('other@example.com', 'other@example.com');
-    const mobileVerificationToken = await verifyFor('+12133734253', '+12133734253');
+    const mobileVerificationToken = await verifyFor('+919811111111', '+919811111111');
     await http()
       .post('/api/v1/auth/signup')
       .send({
-        ...details({ email: 'third@example.com', mobile: '+12133734253' }),
+        ...details({ email: 'third@example.com', mobile: '+919822222222' }),
         emailVerificationToken,
         mobileVerificationToken,
       })
       .expect(401);
   });
 
+  it('accepts Indian mobile numbers only', async () => {
+    const res = await http()
+      .post('/api/v1/auth/signup/validate')
+      .send(details({ email: 'intl@example.com', mobile: '+447911123456' }))
+      .expect(400);
+    expect(JSON.stringify(res.body.message)).toContain('Indian mobile');
+    await http()
+      .post('/api/v1/auth/signup/validate')
+      .send(details({ email: 'intl@example.com', mobile: '9855555555', fullName: 'Anil 123' }))
+      .expect(400);
+  });
+
   it('rejects sign-up without accepting terms', async () => {
     await http()
       .post('/api/v1/auth/signup/validate')
-      .send(details({ email: 'new@example.com', mobile: '+447911123456', acceptTerms: false }))
+      .send(details({ email: 'new@example.com', mobile: '+919833333333', acceptTerms: false }))
       .expect(400);
   });
 
   it('reports which field is already registered', async () => {
     const byEmail = await http()
       .post('/api/v1/auth/signup/validate')
-      .send(details({ mobile: '+447911123456' }))
+      .send(details({ mobile: '+919833333333' }))
       .expect(409);
     expect(byEmail.body.field).toBe('email');
 
@@ -273,7 +285,7 @@ describe('Customer authentication (e2e)', () => {
   it('stores the referrer when a valid referral code is used', async () => {
     const referrer = await prisma.user.findUniqueOrThrow({ where: { mobile: MOBILE_E164 } });
     const email = 'referred@example.com';
-    const mobile = '+971501234567';
+    const mobile = '+919844444444';
     const emailVerificationToken = await verifyFor(email, email);
     const mobileVerificationToken = await verifyFor(mobile, mobile);
 
@@ -289,6 +301,6 @@ describe('Customer authentication (e2e)', () => {
 
     const referred = await prisma.user.findUniqueOrThrow({ where: { mobile } });
     expect(referred.referredById).toBe(referrer.id);
-    expect(referred.country).toBe('AE');
+    expect(referred.country).toBe('IN');
   });
 });

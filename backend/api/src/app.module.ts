@@ -19,6 +19,8 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PriceAlertsModule } from './modules/price-alerts/price-alerts.module';
 import { ReturnsModule } from './modules/returns/returns.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { SellModule } from './modules/sell/sell.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { ShoppingModule } from './modules/shopping/shopping.module';
 import { StoresModule } from './modules/stores/stores.module';
 import { SupportModule } from './modules/support/support.module';
@@ -59,6 +61,8 @@ import { PrismaModule } from './prisma/prisma.module';
     B2bModule,
     AffiliateModule,
     SupportModule,
+    SettingsModule,
+    SellModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

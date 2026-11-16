@@ -29,6 +29,11 @@ export const envSchema = z
     COOKIE_SECURE: bool,
     /** Folder for uploaded files such as return photos. Relative paths start at the API folder. */
     STORAGE_DIR: z.string().min(1).default('storage'),
+    /**
+     * India Post pincode lookup used when a pincode isn't in our pincode master yet.
+     * Leave empty to turn it off (it is always off in tests).
+     */
+    PINCODE_LOOKUP_URL: z.string().default('https://api.postalpincode.in/pincode'),
     COOKIE_DOMAIN: z
       .string()
       .optional()

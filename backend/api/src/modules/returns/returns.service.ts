@@ -209,9 +209,16 @@ export class ReturnsService {
       refundAmountPaise += line.unitPricePaise * item.quantity;
     }
 
-    const pickupAddress = dto.pickupAddressId
-      ? toAddressSnapshot(await this.addresses.findOwned(userId, dto.pickupAddressId))
-      : eligibility.orderAddress;
+    const pickupFrom = dto.pickupAddressId
+      ? await this.addresses.findOwned(userId, dto.pickupAddressId)
+      : null;
+    if (pickupFrom && pickupFrom.country !== 'IN') {
+      throw new BadRequestException({
+        message: 'Return pickups are available from Indian addresses only',
+        field: 'pickupAddressId',
+      });
+    }
+    const pickupAddress = pickupFrom ? toAddressSnapshot(pickupFrom) : eligibility.orderAddress;
 
     const created = await this.prisma.$transaction(async (tx) => {
       // Re-check inside the transaction so two quick submissions cannot over-return.

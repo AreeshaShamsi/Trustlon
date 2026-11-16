@@ -3,22 +3,28 @@ import { Transform } from 'class-transformer';
 import {
   Equals,
   IsBoolean,
-  IsEmail,
   IsEnum,
+  IsIn,
   IsISO31661Alpha2,
   IsOptional,
-  IsPhoneNumber,
   IsString,
   Length,
   Matches,
   MaxLength,
 } from 'class-validator';
-import { normalizeEmail, normalizePhone } from '../../../common/utils/identifier';
+import {
+  EMAIL_PATTERN,
+  INDIAN_MOBILE,
+  normalizeEmail,
+  normalizeIndianMobile,
+  PERSON_NAME,
+  PERSON_NAME_MESSAGE,
+} from '../../../common/utils/identifier';
 import { PASSWORD_PATTERN, PASSWORD_RULE_MESSAGE } from '../auth.constants';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 const toEmail = ({ value }: { value: unknown }) => normalizeEmail(value) ?? value;
-const toPhone = ({ value }: { value: unknown }) => normalizePhone(value) ?? value;
+const toPhone = ({ value }: { value: unknown }) => normalizeIndianMobile(value) ?? value;
 const optionalUpper = ({ value }: { value: unknown }) => {
   if (typeof value !== 'string' || value.trim() === '') return undefined;
   return value.trim().toUpperCase();
@@ -31,7 +37,10 @@ export class SendOtpDto {
   @MaxLength(254)
   identifier: string;
 
-  @IsEnum(OtpPurpose)
+  /** CHANGE_CONTACT codes are sent from Account settings (/me/contact/otp), never from here. */
+  @IsIn([OtpPurpose.SIGNUP, OtpPurpose.LOGIN, OtpPurpose.RESET_PASSWORD], {
+    message: 'purpose must be SIGNUP, LOGIN or RESET_PASSWORD',
+  })
   purpose: OtpPurpose;
 }
 
@@ -50,15 +59,16 @@ export class SignupDetailsDto {
   @Transform(trim)
   @IsString()
   @Length(2, 100, { message: 'Full name must be 2 to 100 characters' })
+  @Matches(PERSON_NAME, { message: PERSON_NAME_MESSAGE })
   fullName: string;
 
   @Transform(toEmail)
-  @IsEmail({}, { message: 'Enter a valid email address' })
+  @Matches(EMAIL_PATTERN, { message: 'Enter a valid email address, e.g. name@example.com' })
   @MaxLength(254)
   email: string;
 
   @Transform(toPhone)
-  @IsPhoneNumber(undefined, { message: 'Enter a valid mobile number with country code' })
+  @Matches(INDIAN_MOBILE, { message: 'Enter a valid 10-digit Indian mobile number' })
   mobile: string;
 
   @Matches(PASSWORD_PATTERN, { message: PASSWORD_RULE_MESSAGE })

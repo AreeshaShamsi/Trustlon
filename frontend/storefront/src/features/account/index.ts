@@ -13,3 +13,4 @@ export { BusinessPage } from './BusinessPage';
 export { ReviewsPage } from './ReviewsPage';
 export { NewTicket, SupportList, TicketThread } from './SupportPages';
 export { WalletPage } from './WalletPage';
+export { SettingsPage } from './SettingsPage';

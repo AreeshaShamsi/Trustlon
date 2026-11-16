@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import type { Dictionary } from '@/lib/i18n/en';
-import { formatInternational, isCountryCode, toE164 } from '@/lib/phone';
+import { formatInternational } from '@/lib/phone';
+import { EMAIL_PATTERN, PERSON_NAME, toIndianMobile } from '@/lib/validation';
 
-export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export { EMAIL_PATTERN };
 
 export const PASSWORD_RULES = {
   length: (v: string) => v.length >= 8 && v.length <= 72,
@@ -15,15 +16,40 @@ export type PasswordRule = keyof typeof PASSWORD_RULES;
 export const meetsPasswordRules = (value: string) =>
   (Object.keys(PASSWORD_RULES) as PasswordRule[]).every((rule) => PASSWORD_RULES[rule](value));
 
-const phoneFromValues = (country: string, national: string) =>
-  isCountryCode(country) ? toE164(national, country) : null;
+export type PasswordStrength = 'weak' | 'fair' | 'good' | 'strong';
+
+/**
+ * A simple strength estimate for the meter (spec 1.3). Passing the rules is "fair"; length,
+ * symbols and fewer repeats raise it. Common patterns keep it weak.
+ */
+export function passwordStrength(value: string): { level: PasswordStrength; score: 1 | 2 | 3 | 4 } {
+  if (!meetsPasswordRules(value) || /^(?=.*(password|qwerty|trustlon|123456|abcdef))/i.test(value)) {
+    return { level: 'weak', score: 1 };
+  }
+  let points = 0;
+  if (value.length >= 12) points++;
+  if (value.length >= 16) points++;
+  if (/[^A-Za-z0-9]/.test(value)) points++;
+  if (value.length >= 10 && new Set(value).size >= 8) points++;
+  if (points >= 3) return { level: 'strong', score: 4 };
+  if (points >= 1) return { level: 'good', score: 3 };
+  return { level: 'fair', score: 2 };
+}
+
+/** Customer accounts use Indian mobile numbers only; the country value is kept for the form shape. */
+const phoneFromValues = (_country: string, national: string) => toIndianMobile(national);
 
 /* Sign-up */
 
 export const signupSchema = (t: Dictionary) =>
   z
     .object({
-      fullName: z.string().trim().min(2, t.validation.fullName).max(100, t.validation.fullName),
+      fullName: z
+        .string()
+        .trim()
+        .min(2, t.validation.fullName)
+        .max(100, t.validation.fullName)
+        .regex(PERSON_NAME, t.validation.nameLetters),
       email: z.string().trim().regex(EMAIL_PATTERN, t.validation.email).max(254, t.validation.email),
       mobileCountry: z.string(),
       mobileNational: z.string(),

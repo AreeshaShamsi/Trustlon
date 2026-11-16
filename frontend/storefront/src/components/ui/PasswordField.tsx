@@ -10,15 +10,34 @@ type PasswordFieldProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'typ
   aside?: React.ReactNode;
   showLabel: string;
   hideLabel: string;
+  /** Shown under the field while Caps Lock is on. */
+  capsLockLabel?: string;
 };
 
 export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(function PasswordField(
-  { label, error, hint, aside, showLabel, hideLabel, id, className, ...props },
+  {
+    label,
+    error,
+    hint,
+    aside,
+    showLabel,
+    hideLabel,
+    capsLockLabel = 'Caps Lock is on',
+    id,
+    className,
+    onKeyDown,
+    onKeyUp,
+    onBlur,
+    ...props
+  },
   ref,
 ) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const [visible, setVisible] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+  const readCapsLock = (event: React.KeyboardEvent<HTMLInputElement>) =>
+    setCapsLock(event.getModifierState?.('CapsLock') ?? false);
 
   return (
     <Field id={inputId} label={label} error={error} hint={hint} aside={aside}>
@@ -31,6 +50,18 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(fu
           aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
           className={cx(inputClass(Boolean(error)), 'pr-16', className)}
           {...props}
+          onKeyDown={(event) => {
+            readCapsLock(event);
+            onKeyDown?.(event);
+          }}
+          onKeyUp={(event) => {
+            readCapsLock(event);
+            onKeyUp?.(event);
+          }}
+          onBlur={(event) => {
+            setCapsLock(false);
+            onBlur?.(event);
+          }}
         />
         <button
           type="button"
@@ -42,6 +73,11 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(fu
           {visible ? hideLabel : showLabel}
         </button>
       </div>
+      {capsLock && (
+        <p role="status" className="mt-1.5 text-xs font-medium text-navy">
+          {capsLockLabel}
+        </p>
+      )}
     </Field>
   );
 });
