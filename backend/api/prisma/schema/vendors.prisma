@@ -6,6 +6,10 @@ enum VendorStatus {
 
 /// A seller on the marketplace. Trustlon's own brand is a vendor with isPlatformOwned = true.
 model Vendor {
+  standardDeliveryPaise Int @default(0) @map("standard_delivery_paise")
+  expressDeliveryPaise Int? @map("express_delivery_paise")
+  sameDayDeliveryPaise Int? @map("same_day_delivery_paise")
+  deliveryGstRateBps Int? @map("delivery_gst_rate_bps")
   id              String       @id @default(uuid()) @db.Uuid
   slug            String       @unique @db.VarChar(80)
   displayName     String       @map("display_name") @db.VarChar(120)

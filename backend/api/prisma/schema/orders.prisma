@@ -35,6 +35,20 @@ enum RefundStatus {
 
 /// What the customer placed in one checkout. Split into one sub-order per seller.
 model Order {
+  checkoutKey String? @unique @map("checkout_key") @db.Uuid
+  checkoutFingerprint String? @map("checkout_fingerprint")
+  reservationExpiresAt DateTime? @map("reservation_expires_at")
+  reservationState String? @map("reservation_state") @db.VarChar(20)
+  razorpayOrderId String? @unique @map("razorpay_order_id")
+  razorpayPaymentId String? @unique @map("razorpay_payment_id")
+  gatewayCreating Boolean @default(false) @map("gateway_creating")
+  confirmedAt DateTime? @map("confirmed_at")
+  escrowStatus String? @map("escrow_status")
+  coinsUsed Int @default(0) @map("coins_used")
+  walletUsedPaise Int @default(0) @map("wallet_used_paise")
+  gstin String? @db.VarChar(15)
+  taxBreakup Json? @map("tax_breakup")
+  checkoutPaymentMethod String? @map("checkout_payment_method")
   id                  String        @id @default(uuid()) @db.Uuid
   orderNumber         String        @unique @map("order_number") @db.VarChar(20)
   userId              String        @map("user_id") @db.Uuid
@@ -62,6 +76,7 @@ model Order {
   supportTickets SupportTicket[]
 
   @@index([userId, placedAt])
+  @@index([reservationState, reservationExpiresAt])
   @@map("orders")
 }
 

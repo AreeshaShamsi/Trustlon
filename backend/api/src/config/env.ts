@@ -12,6 +12,9 @@ export const envSchema = z
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
 
     DATABASE_URL: z.string().url(),
+    RAZORPAY_KEY_ID: z.string().optional(),
+    RAZORPAY_KEY_SECRET: z.string().optional(),
+    RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
 
     JWT_ACCESS_SECRET: z.string().min(32),
     OTP_SECRET: z.string().min(32),

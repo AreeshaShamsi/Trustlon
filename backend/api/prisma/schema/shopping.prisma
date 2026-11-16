@@ -1,5 +1,8 @@
 /// One cart per signed-in user, or per guest token for visitors who are not signed in.
 model Cart {
+  expiresAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP + interval '30 days')")) @map("expires_at")
+  couponCode String? @map("coupon_code") @db.VarChar(40)
+  coinsEnabled Boolean @default(false) @map("coins_enabled")
   id         String   @id @default(uuid()) @db.Uuid
   userId     String?  @unique @map("user_id") @db.Uuid
   guestToken String?  @unique @map("guest_token") @db.Uuid
@@ -13,6 +16,8 @@ model Cart {
 }
 
 model CartItem {
+  savedForLater Boolean @default(false) @map("saved_for_later")
+  lastPricePaise Int? @map("last_price_paise")
   id        String   @id @default(uuid()) @db.Uuid
   cartId    String   @map("cart_id") @db.Uuid
   productId String   @map("product_id") @db.Uuid
@@ -25,6 +30,17 @@ model CartItem {
 
   @@unique([cartId, productId])
   @@map("cart_items")
+}
+
+model Coupon {
+  code String @id @db.VarChar(40)
+  discountBps Int @map("discount_bps")
+  minTotalPaise Int @default(0) @map("min_total_paise")
+  maxDiscountPaise Int? @map("max_discount_paise")
+  startsAt DateTime @map("starts_at")
+  endsAt DateTime @map("ends_at")
+  active Boolean @default(true)
+  @@map("coupons")
 }
 
 model WishlistItem {

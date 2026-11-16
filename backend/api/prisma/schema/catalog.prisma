@@ -32,6 +32,7 @@ model Category {
 }
 
 model Product {
+  gstRateBps Int? @map("gst_rate_bps")
   id          String        @id @default(uuid()) @db.Uuid
   slug        String        @unique @db.VarChar(160)
   vendorId    String        @map("vendor_id") @db.Uuid

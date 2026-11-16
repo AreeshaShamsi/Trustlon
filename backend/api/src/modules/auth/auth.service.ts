@@ -215,7 +215,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
     const event: UserLoggedInEvent = { userId: user.id, guestCartToken };
-    this.events.emit(AUTH_EVENTS.USER_LOGGED_IN, event);
+    await this.events.emitAsync(AUTH_EVENTS.USER_LOGGED_IN, event);
     return this.sessions.create(updated, meta);
   }
 

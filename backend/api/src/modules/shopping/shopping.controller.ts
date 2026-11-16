@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../../common/auth/optional-jwt-auth.guard';
 import { CurrentShopper, Shopper } from '../../common/shopper/shopper';
 import { CartService } from './cart.service';
-import { AddCartItemDto, ProductRefDto, SetQuantityDto } from './dto';
+import { AddCartItemDto, CouponDto, ProductRefDto, SetQuantityDto } from './dto';
 import { RecentlyViewedService } from './recently-viewed.service';
 import { WishlistService } from './wishlist.service';
 
@@ -39,23 +39,34 @@ export class CartController {
     return this.cart.addItem(shopper, dto.productId, dto.quantity);
   }
 
-  @Patch('items/:productId')
+  @Patch('items/:id')
   setQuantity(
     @CurrentShopper() shopper: Shopper,
-    @Param('productId', ParseUUIDPipe) productId: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SetQuantityDto,
   ) {
-    return this.cart.setQuantity(shopper, productId, dto.quantity);
+    return this.cart.change(shopper, id, dto);
   }
 
-  @Delete('items/:productId')
-  remove(@CurrentShopper() shopper: Shopper, @Param('productId', ParseUUIDPipe) productId: string) {
-    return this.cart.removeItem(shopper, productId);
+  @Delete('items/:id')
+  remove(@CurrentShopper() shopper: Shopper, @Param('id', ParseUUIDPipe) id: string) {
+    return this.cart.removeItem(shopper, id);
   }
 
   @Delete()
   clear(@CurrentShopper() shopper: Shopper) {
     return this.cart.clear(shopper);
+  }
+
+  @Post('coupon')
+  @HttpCode(HttpStatus.OK)
+  coupon(@CurrentShopper() shopper: Shopper, @Body() dto: CouponDto) {
+    return this.cart.coupon(shopper, dto.code);
+  }
+
+  @Delete('coupon')
+  removeCoupon(@CurrentShopper() shopper: Shopper) {
+    return this.cart.coupon(shopper, null);
   }
 }
 

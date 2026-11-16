@@ -37,6 +37,13 @@ export class CatalogController {
     return this.products.facets(query);
   }
   
+  /** Bounded lookup for data-driven related-product rails. Hidden products are omitted. */
+  @Get('products/by-ids')
+  async productsByIds(@Query('ids') ids?: string) {
+    const requested = typeof ids === 'string' ? [...new Set(ids.split(',').filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))].slice(0, 30) : [];
+    return { items: await this.products.byIds(requested) };
+  }
+
   @Get('products/:slug')
   product(@Param('slug') slug: string) {
     return this.products.detail(slug);

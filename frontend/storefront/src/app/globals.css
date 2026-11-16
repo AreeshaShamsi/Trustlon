@@ -4,6 +4,16 @@
 @tailwind components;
 @tailwind utilities;
 
+.pdp { background: #fafaf8; font-family: Inter, sans-serif; }
+.pdp :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 3px;
+}
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
 @layer base {
   :root {
     --font-sans: 'Inter';

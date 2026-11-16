@@ -125,9 +125,13 @@ export class OrdersService {
     const reason = dto.comment
       ? `${CANCEL_REASONS[dto.reason]}: ${dto.comment}`
       : CANCEL_REASONS[dto.reason];
-    const refund = planCancellationRefund(subOrder.order, subOrder.totalPaise);
+    let refund = planCancellationRefund(subOrder.order, subOrder.totalPaise);
 
     await this.prisma.$transaction(async (tx) => {
+      // Serialize customer cancellation with checkout verification and reservation release.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${subOrder.orderId}))`;
+      const currentOrder = await tx.order.findUniqueOrThrow({ where: { id: subOrder.orderId } });
+      refund = planCancellationRefund(currentOrder, subOrder.totalPaise);
       const refundData: Prisma.SubOrderUpdateManyMutationInput =
         refund.kind === 'none'
           ? {}

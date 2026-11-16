@@ -13,8 +13,14 @@ export type Shopper = { kind: 'user'; userId: string } | { kind: 'guest'; guestT
 export function readShopper(request: Request & { user?: AuthUser }): Shopper | null {
   if (request.user) return { kind: 'user', userId: request.user.id };
   const header = request.headers[GUEST_TOKEN_HEADER];
-  const token = Array.isArray(header) ? header[0] : header;
-  if (token && UUID.test(token)) return { kind: 'guest', guestToken: token.toLowerCase() };
+  const token =
+    (Array.isArray(header) ? header[0] : header) ||
+    (request.cookies
+      ? request.cookies[GUEST_TOKEN_HEADER] ||
+        request.cookies['tl_guest_cart'] ||
+        request.cookies['guest_token']
+      : undefined);
+  if (token && typeof token === 'string' && UUID.test(token)) return { kind: 'guest', guestToken: token.toLowerCase() };
   return null;
 }
 

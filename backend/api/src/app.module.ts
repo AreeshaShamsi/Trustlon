@@ -27,6 +27,7 @@ import { SupportModule } from './modules/support/support.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { HealthController } from './modules/health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
+import { CheckoutModule } from './modules/checkout/checkout.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { PrismaModule } from './prisma/prisma.module';
     CatalogModule,
     StoresModule,
     ShoppingModule,
+    CheckoutModule,
     MarketingModule,
     HomeModule,
     WalletModule,

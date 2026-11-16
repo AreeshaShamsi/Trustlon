@@ -13,7 +13,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
-    "test": "jest",
+    "test": "node -r ../../realpath-patch.cjs ../../node_modules/jest/bin/jest.js --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "prisma:seed": "prisma db seed",
     "location:pincodes": "ts-node prisma/import-pincodes.ts",
