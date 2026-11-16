@@ -97,7 +97,9 @@ export class ProductSearchService {
           : Prisma.sql`FALSE`,
       );
     }
-    if (query.store) filters.push(Prisma.sql`store_slug = ${query.store}`);
+    if (query.store?.length) {
+      filters.push(Prisma.sql`store_slug IN (${Prisma.join(query.store)})`);
+    }
     if (query.originals) filters.push(Prisma.sql`is_platform_owned = TRUE`);
     if (query.bundle) filters.push(Prisma.sql`is_bundle = TRUE`);
     if (query.inStock) filters.push(Prisma.sql`stock > 0`);

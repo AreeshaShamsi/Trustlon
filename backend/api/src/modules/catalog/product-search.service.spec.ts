@@ -63,7 +63,7 @@ describe('product search orchestration', () => {
         q,
         autocorrect: false,
         category: 'audio',
-        store: ['soundspace'],
+        store: ['soundspace', 'urban-thread'],
         minPricePaise: 10,
         maxPricePaise: 500,
         inStock: true,
@@ -79,6 +79,9 @@ describe('product search orchestration', () => {
     expect(sql.sql).not.toContain(q);
     expect(sql.values).toContain(q);
     expect(sql.sql).toContain('category_id IN');
+    expect(sql.sql).toContain('store_slug IN');
+    expect(sql.values).toContain('soundspace');
+    expect(sql.values).toContain('urban-thread');
     expect(sql.sql).toContain('stock > 0');
     expect(sql.sql).toContain('starts_at <=');
     expect(sql.sql).toContain('price_paise DESC, id ASC');
