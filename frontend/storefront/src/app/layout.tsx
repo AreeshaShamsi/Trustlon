@@ -24,13 +24,16 @@ const FONT_FAMILIES = [
   'Noto+Sans+Telugu',
   'Noto+Sans+Kannada',
   'Noto+Sans+Malayalam',
+  'Noto+Sans+Arabic',
+  'Noto+Sans+SC',
+  'Noto+Sans+JP',
 ];
 const FONTS_URL = `https://fonts.googleapis.com/css2?${FONT_FAMILIES.map(
   (family) => `family=${family}:wght@100..900`,
 ).join('&')}&display=swap`;
 
 /** Used by the sans font stack in design-system/tokens/typography.ts. */
-const SCRIPT_FONT_VARIABLES = `:root{--font-bengali:'Noto Sans Bengali';--font-tamil:'Noto Sans Tamil';--font-telugu:'Noto Sans Telugu';--font-kannada:'Noto Sans Kannada';--font-malayalam:'Noto Sans Malayalam';}`;
+const SCRIPT_FONT_VARIABLES = `:root{--font-bengali:'Noto Sans Bengali';--font-tamil:'Noto Sans Tamil';--font-telugu:'Noto Sans Telugu';--font-kannada:'Noto Sans Kannada';--font-malayalam:'Noto Sans Malayalam';--font-arabic:'Noto Sans Arabic';--font-cjk-sc:'Noto Sans SC';--font-cjk-jp:'Noto Sans JP';}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

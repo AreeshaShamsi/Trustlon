@@ -16,8 +16,8 @@ enum UserStatus {
   BLOCKED
 }
 
-/// Storefront languages (same set as large Indian marketplaces). Add a value here and a
-/// dictionary in the storefront to support another language.
+/// Storefront languages: Indian languages plus major international ones. Add a value here and
+/// a dictionary in the storefront to support another language.
 enum Language {
   EN
   HI
@@ -27,6 +27,14 @@ enum Language {
   TE
   KN
   ML
+  AR
+  FR
+  ES
+  DE
+  PT
+  RU
+  ZH
+  JA
 }
 
 enum OtpChannel {

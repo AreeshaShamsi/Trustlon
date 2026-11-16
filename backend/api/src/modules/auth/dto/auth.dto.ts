@@ -14,17 +14,18 @@ import {
 } from 'class-validator';
 import {
   EMAIL_PATTERN,
-  INDIAN_MOBILE,
+  MOBILE_RULE_MESSAGE,
   normalizeEmail,
-  normalizeIndianMobile,
+  normalizeMobile,
   PERSON_NAME,
   PERSON_NAME_MESSAGE,
 } from '../../../common/utils/identifier';
+import { IsMobile } from '../../../common/validation/is-mobile';
 import { PASSWORD_PATTERN, PASSWORD_RULE_MESSAGE } from '../auth.constants';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 const toEmail = ({ value }: { value: unknown }) => normalizeEmail(value) ?? value;
-const toPhone = ({ value }: { value: unknown }) => normalizeIndianMobile(value) ?? value;
+const toPhone = ({ value }: { value: unknown }) => normalizeMobile(value) ?? value;
 const optionalUpper = ({ value }: { value: unknown }) => {
   if (typeof value !== 'string' || value.trim() === '') return undefined;
   return value.trim().toUpperCase();
@@ -68,7 +69,7 @@ export class SignupDetailsDto {
   email: string;
 
   @Transform(toPhone)
-  @Matches(INDIAN_MOBILE, { message: 'Enter a valid 10-digit Indian mobile number' })
+  @IsMobile({ message: MOBILE_RULE_MESSAGE })
   mobile: string;
 
   @Matches(PASSWORD_PATTERN, { message: PASSWORD_RULE_MESSAGE })

@@ -112,7 +112,7 @@ export function Combobox<T>({
           aria-invalid={Boolean(error) || undefined}
           aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
           autoComplete="off"
-          className={cx(inputClass(Boolean(error)), loading && 'pr-9', className)}
+          className={cx(inputClass(Boolean(error)), loading && 'pe-9', className)}
           {...props}
           value={value}
           onChange={(event) => {
@@ -147,7 +147,7 @@ export function Combobox<T>({
         {loading && (
           <span
             aria-hidden
-            className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-slate-300 border-t-transparent"
+            className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-slate-300 border-t-transparent"
           />
         )}
         <ul
@@ -155,7 +155,7 @@ export function Combobox<T>({
           role="listbox"
           aria-label={label}
           hidden={!showList}
-          className="absolute left-0 top-full z-20 mt-1 max-h-64 w-full min-w-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-sm"
+          className="absolute start-0 top-full z-20 mt-1 max-h-64 w-full min-w-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-sm"
         >
           {options.map((option, index) => (
             <li

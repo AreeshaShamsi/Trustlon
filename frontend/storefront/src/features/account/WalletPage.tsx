@@ -190,22 +190,22 @@ export function WalletPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-sm">
+                <table className="w-full min-w-[560px] text-start text-sm">
                   <thead className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th scope="col" className="py-2 pr-4 font-medium">
+                      <th scope="col" className="py-2 pe-4 font-medium">
                         Date
                       </th>
-                      <th scope="col" className="py-2 pr-4 font-medium">
+                      <th scope="col" className="py-2 pe-4 font-medium">
                         Details
                       </th>
-                      <th scope="col" className="py-2 pr-4 font-medium">
+                      <th scope="col" className="py-2 pe-4 font-medium">
                         Type
                       </th>
-                      <th scope="col" className="py-2 pr-4 text-right font-medium">
+                      <th scope="col" className="py-2 pe-4 text-end font-medium">
                         Amount
                       </th>
-                      <th scope="col" className="py-2 text-right font-medium">
+                      <th scope="col" className="py-2 text-end font-medium">
                         Balance
                       </th>
                     </tr>
@@ -215,10 +215,10 @@ export function WalletPage() {
                       const credit = item.type === 'CREDIT';
                       return (
                         <tr key={item.id} className="align-top">
-                          <td className="whitespace-nowrap py-3 pr-4 text-slate-500">
+                          <td className="whitespace-nowrap py-3 pe-4 text-slate-500">
                             {formatDate(item.createdAt)}
                           </td>
-                          <td className="py-3 pr-4 text-navy">
+                          <td className="py-3 pe-4 text-navy">
                             {item.description}
                             {item.reference && (
                               <span className="block text-xs text-slate-500">
@@ -231,14 +231,14 @@ export function WalletPage() {
                               </span>
                             )}
                           </td>
-                          <td className="py-3 pr-4">
+                          <td className="py-3 pe-4">
                             <span className="rounded-full bg-navy-50 px-2.5 py-0.5 text-xs text-navy">
                               {SOURCE_LABELS[item.source]}
                             </span>
                           </td>
                           <td
                             className={cn(
-                              'whitespace-nowrap py-3 pr-4 text-right font-semibold',
+                              'whitespace-nowrap py-3 pe-4 text-end font-semibold',
                               credit ? 'text-teal-600' : 'text-navy',
                             )}
                           >
@@ -250,7 +250,7 @@ export function WalletPage() {
                               </span>
                             )}
                           </td>
-                          <td className="whitespace-nowrap py-3 text-right text-slate-500">
+                          <td className="whitespace-nowrap py-3 text-end text-slate-500">
                             {formatMoney(item.balanceAfterPaise)}
                           </td>
                         </tr>

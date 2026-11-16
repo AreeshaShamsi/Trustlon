@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import type { FieldErrors, UseFormReturn } from 'react-hook-form';
 import { Button, MobileField, TextField } from '@/components/ui';
 import { useI18n } from '@/lib/i18n/language-provider';
@@ -18,16 +17,12 @@ export const identifierDefaults: IdentifierValues = {
 
 /** Email field with a switch to a mobile number field (with country code). */
 export function IdentifierField<T extends IdentifierFormValues>({ form }: { form: UseFormReturn<T> }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   // The form's own value type is wider than IdentifierValues; work against the shared fields only.
   const f = form as unknown as UseFormReturn<IdentifierValues>;
   const errors = f.formState.errors as FieldErrors<IdentifierValues>;
   const mode = f.watch('mode');
-
-  // Mobile sign-in is for Indian numbers (+91) only.
-  useEffect(() => {
-    f.setValue('phoneCountry', DEFAULT_COUNTRY);
-  }, [f]);
+  const country = f.watch('phoneCountry') || DEFAULT_COUNTRY;
 
   const switchMode = () => {
     f.clearErrors();
@@ -45,6 +40,10 @@ export function IdentifierField<T extends IdentifierFormValues>({ form }: { form
       <MobileField
         key="phone"
         label={t.fields.mobile}
+        country={country}
+        onCountryChange={(next) => f.setValue('phoneCountry', next)}
+        locale={language}
+        countryLabel={t.fields.country}
         placeholder={t.placeholders.mobile}
         autoFocus
         error={errors.phoneNational?.message}

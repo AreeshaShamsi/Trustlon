@@ -48,7 +48,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(fu
           type={visible ? 'text' : 'password'}
           aria-invalid={Boolean(error) || undefined}
           aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
-          className={cx(inputClass(Boolean(error)), 'pr-16', className)}
+          className={cx(inputClass(Boolean(error)), 'pe-16', className)}
           {...props}
           onKeyDown={(event) => {
             readCapsLock(event);
@@ -68,7 +68,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(fu
           onClick={() => setVisible((v) => !v)}
           aria-controls={inputId}
           aria-pressed={visible}
-          className="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-semibold text-slate-500 hover:text-navy focus:outline-none focus-visible:text-navy"
+          className="absolute inset-y-0 end-0 flex items-center px-3 text-xs font-semibold text-slate-500 hover:text-navy focus:outline-none focus-visible:text-navy"
         >
           {visible ? hideLabel : showLabel}
         </button>

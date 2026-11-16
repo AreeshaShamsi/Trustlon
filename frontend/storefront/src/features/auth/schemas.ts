@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Dictionary } from '@/lib/i18n/en';
 import { formatInternational } from '@/lib/phone';
-import { EMAIL_PATTERN, PERSON_NAME, toIndianMobile } from '@/lib/validation';
+import { EMAIL_PATTERN, PERSON_NAME, toMobileE164 } from '@/lib/validation';
 
 export { EMAIL_PATTERN };
 
@@ -36,8 +36,8 @@ export function passwordStrength(value: string): { level: PasswordStrength; scor
   return { level: 'fair', score: 2 };
 }
 
-/** Customer accounts use Indian mobile numbers only; the country value is kept for the form shape. */
-const phoneFromValues = (_country: string, national: string) => toIndianMobile(national);
+/** India needs a 10-digit mobile; other countries follow their own numbering plan. */
+const phoneFromValues = (country: string, national: string) => toMobileE164(national, country);
 
 /* Sign-up */
 

@@ -11,8 +11,8 @@ import { Alert, Button, cn, Dialog, MobileField, TextField } from '@/design-syst
 import { homeApi } from '@/features/home/api';
 import { ApiError } from '@/lib/http';
 import { postalCodeValid, type CountryInfo } from '@/lib/location';
-import { formatInternational } from '@/lib/phone';
-import { isValidName, mobileDigits, PINCODE_PATTERN, toIndianMobile } from '@/lib/validation';
+import { isCountryCode, splitE164, type CountryCode } from '@/lib/phone';
+import { isValidName, PINCODE_PATTERN, toMobileE164 } from '@/lib/validation';
 import { accountApi } from '../api';
 import { ADDRESS_LABELS } from '../format';
 import type { Address, AddressInput, AddressLabel } from '../types';
@@ -39,10 +39,7 @@ function fromAddress(address: Address): AddressInput {
     label: address.label,
     labelName: address.labelName ?? '',
     fullName: address.fullName,
-    mobile:
-      (address.country ?? 'IN') === 'IN'
-        ? mobileDigits(address.mobile)
-        : formatInternational(address.mobile),
+    mobile: splitE164(address.mobile).national,
     line1: address.line1,
     line2: address.line2 ?? '',
     landmark: address.landmark ?? '',
@@ -54,16 +51,20 @@ function fromAddress(address: Address): AddressInput {
   };
 }
 
-function validate(values: AddressInput, country: CountryInfo | undefined): Errors {
+function validate(
+  values: AddressInput,
+  country: CountryInfo | undefined,
+  phoneCountry: string,
+): Errors {
   const errors: Errors = {};
   const india = values.country === 'IN';
   if (!isValidName(values.fullName)) {
     errors.fullName = 'Enter the receiver’s full name (letters only)';
   }
-  if (india ? !toIndianMobile(values.mobile) : values.mobile.replace(/\D/g, '').length < 6) {
+  if (!toMobileE164(values.mobile, phoneCountry)) {
     errors.mobile = india
       ? 'Enter a valid 10-digit Indian mobile number'
-      : 'Enter the phone number with country code, e.g. +1 650 253 0000';
+      : 'Enter a valid phone number for the selected country';
   }
   if (values.line1.trim().length < 3) errors.line1 = 'Enter the house number and street';
   if (
@@ -100,10 +101,13 @@ export function AddressForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [pincodeNote, setPincodeNote] = useState<string | null>(null);
+  /** Calling code of the receiver's phone: +91 for Indian addresses, chosen from the list abroad. */
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>('IN');
 
   useEffect(() => {
     if (!open) return;
     setValues(address ? fromAddress(address) : EMPTY);
+    setPhoneCountry(address ? splitE164(address.mobile).country : 'IN');
     setErrors({});
     setFormError(null);
     setPincodeNote(null);
@@ -143,7 +147,7 @@ export function AddressForm({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const found = validate(values, country);
+    const found = validate(values, country, phoneCountry);
     setErrors(found);
     if (Object.keys(found).length) return;
 
@@ -152,7 +156,7 @@ export function AddressForm({
     const input: AddressInput = {
       ...values,
       labelName: values.label === 'OTHER' ? values.labelName?.trim() : undefined,
-      mobile: india ? (toIndianMobile(values.mobile) ?? values.mobile) : values.mobile.trim(),
+      mobile: toMobileE164(values.mobile, phoneCountry) ?? values.mobile.trim(),
     };
     try {
       const result = address
@@ -222,29 +226,20 @@ export function AddressForm({
             onChange={(e) => set('fullName', e.target.value)}
             error={errors.fullName}
           />
-          {india ? (
-            <MobileField
-              label="Mobile number"
-              placeholder="10-digit mobile number"
-              value={values.mobile}
-              onChange={(e) => set('mobile', e.target.value)}
-              error={errors.mobile}
-              hint="Used by the courier to reach you"
-            />
-          ) : (
-            <TextField
-              label="Phone number"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="With country code, e.g. +1 650 253 0000"
-              maxLength={20}
-              value={values.mobile}
-              onChange={(e) => set('mobile', e.target.value)}
-              error={errors.mobile}
-              hint="Used by the courier to reach the receiver"
-            />
-          )}
+          <MobileField
+            label={india ? 'Mobile number' : 'Phone number'}
+            placeholder={india ? '10-digit mobile number' : 'Phone number'}
+            country={phoneCountry}
+            onCountryChange={india ? undefined : setPhoneCountry}
+            value={values.mobile}
+            onChange={(e) => set('mobile', e.target.value)}
+            error={errors.mobile}
+            hint={
+              india
+                ? 'Used by the courier to reach you'
+                : 'Used by the courier to reach the receiver'
+            }
+          />
         </div>
         <CountrySelect
           countries={countries}
@@ -259,6 +254,7 @@ export function AddressForm({
               city: current.country === code ? current.city : '',
               mobile: '',
             }));
+            if (isCountryCode(code)) setPhoneCountry(code);
             setErrors({});
           }}
         />

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
-import { Alert, Button, cn, focusRing, inputClass, TextField } from '@/design-system';
+import { Alert, Button, cn, focusRing, inputClass, ListSelect, TextField } from '@/design-system';
 import { Icon } from '@/features/home/components/Icon';
 import { ApiError } from '@/lib/http';
 import { accountApi } from './api';
@@ -201,7 +201,6 @@ export function SupportList() {
 export function NewTicket() {
   const params = useSearchParams();
   const router = useRouter();
-  const orderSelectId = useId();
   const descriptionId = useId();
   const [category, setCategory] = useState<TicketCategory | null>(null);
   const [subject, setSubject] = useState('');
@@ -291,25 +290,20 @@ export function NewTicket() {
                 ))}
               </div>
             </fieldset>
-            <div>
-              <label htmlFor={orderSelectId} className="mb-1.5 block text-sm font-medium text-navy">
-                Related order <span className="font-normal text-slate-500">(optional)</span>
-              </label>
-              <select
-                id={orderSelectId}
-                value={orderId}
-                onChange={(e) => setOrderId(e.target.value)}
-                className={cn(inputClass(false), focusRing)}
-              >
-                <option value="">Not about an order</option>
-                {orders.map((order) => (
-                  <option key={order.id} value={order.id}>
-                    #{order.orderNumber} · {formatDate(order.placedAt)} ·{' '}
-                    {order.previewItems[0]?.name ?? ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <ListSelect
+              label="Related order (optional)"
+              value={orderId || 'NONE'}
+              onChange={(next) => setOrderId(next === 'NONE' ? '' : next)}
+              searchPlaceholder="Search by order number or item"
+              options={[
+                { value: 'NONE', label: 'Not about an order' },
+                ...orders.map((order) => ({
+                  value: order.id,
+                  label: `#${order.orderNumber} · ${order.previewItems[0]?.name ?? ''}`,
+                  detail: formatDate(order.placedAt),
+                })),
+              ]}
+            />
             <TextField
               label="Subject"
               maxLength={120}
@@ -329,7 +323,7 @@ export function NewTicket() {
                 onChange={(e) => setDescription(e.target.value)}
                 className={`${inputClass(false)} h-auto py-2`}
               />
-              <p className="mt-1 text-right text-xs text-slate-500">{description.length}/4000</p>
+              <p className="mt-1 text-end text-xs text-slate-500">{description.length}/4000</p>
             </div>
             <div>
               <p className="mb-2 text-sm font-medium text-navy">

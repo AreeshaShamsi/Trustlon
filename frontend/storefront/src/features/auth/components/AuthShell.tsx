@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { BrandLogo } from '@/components/BrandLogo';
-import { LANGUAGES, useI18n, type Language } from '@/lib/i18n/language-provider';
+import { LanguagePicker } from '@/components/LanguagePicker';
+import { useI18n } from '@/lib/i18n/language-provider';
 
 const icons = {
   escrow: (
@@ -75,30 +76,6 @@ function BrandPanel() {
   );
 }
 
-function LanguageSelect() {
-  const { t, language, setLanguage } = useI18n();
-  return (
-    <label className="relative inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-slate-600 hover:bg-slate-100">
-      <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4 fill-none stroke-current" strokeWidth="1.5">
-        <circle cx="10" cy="10" r="7.5" />
-        <path d="M2.5 10h15M10 2.5c2 2.2 3 4.7 3 7.5s-1 5.3-3 7.5c-2-2.2-3-4.7-3-7.5s1-5.3 3-7.5Z" />
-      </svg>
-      <span className="sr-only">{t.common.language}</span>
-      <select
-        value={language}
-        onChange={(event) => setLanguage(event.target.value as Language)}
-        className="cursor-pointer appearance-none bg-transparent pr-1 outline-none"
-      >
-        {LANGUAGES.map((option) => (
-          <option key={option.code} value={option.code} lang={option.code}>
-            {option.native}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 export function AuthShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
 
@@ -111,7 +88,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           <span className="lg:invisible">
             <BrandLogo />
           </span>
-          <LanguageSelect />
+          <LanguagePicker />
         </header>
 
         <main className="flex flex-1 items-start justify-center px-6 pb-12 pt-4 sm:items-center sm:px-10">

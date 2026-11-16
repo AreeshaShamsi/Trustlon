@@ -119,12 +119,16 @@ describe('Customer authentication (e2e)', () => {
       .expect(401);
   });
 
-  it('accepts Indian mobile numbers only', async () => {
+  it('accepts Indian mobiles and international numbers with a country code', async () => {
+    await http()
+      .post('/api/v1/auth/signup/validate')
+      .send(details({ email: 'intl@example.com', mobile: '+44 7911 123456' }))
+      .expect(200);
     const res = await http()
       .post('/api/v1/auth/signup/validate')
-      .send(details({ email: 'intl@example.com', mobile: '+447911123456' }))
+      .send(details({ email: 'intl@example.com', mobile: '58765 43210' }))
       .expect(400);
-    expect(JSON.stringify(res.body.message)).toContain('Indian mobile');
+    expect(JSON.stringify(res.body.message)).toContain('valid mobile number');
     await http()
       .post('/api/v1/auth/signup/validate')
       .send(details({ email: 'intl@example.com', mobile: '9855555555', fullName: 'Anil 123' }))

@@ -16,7 +16,12 @@ import {
   UserRole,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { normalizeEmail, normalizeIndianMobile } from '../../common/utils/identifier';
+import {
+  MOBILE_RULE_MESSAGE,
+  normalizeEmail,
+  normalizeMobile,
+  phoneRegion,
+} from '../../common/utils/identifier';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BCRYPT_ROUNDS, MESSAGES } from '../auth/auth.constants';
 import { OtpService } from '../auth/services/otp.service';
@@ -188,7 +193,7 @@ export class SettingsService {
         data:
           dto.type === 'email'
             ? { email: value, emailVerifiedAt: now }
-            : { mobile: value, mobileVerifiedAt: now, country: 'IN' },
+            : { mobile: value, mobileVerifiedAt: now, country: phoneRegion(value) },
       });
       return toProfile(user);
     } catch (error) {
@@ -468,12 +473,10 @@ export class SettingsService {
   }
 
   private normaliseContact(type: 'email' | 'mobile', raw: string): string {
-    const value = type === 'email' ? normalizeEmail(raw) : normalizeIndianMobile(raw);
+    const value = type === 'email' ? normalizeEmail(raw) : normalizeMobile(raw);
     if (!value) {
       throw fieldError(
-        type === 'email'
-          ? 'Enter a valid email address'
-          : 'Enter a valid 10-digit Indian mobile number',
+        type === 'email' ? 'Enter a valid email address' : MOBILE_RULE_MESSAGE,
         'value',
       );
     }

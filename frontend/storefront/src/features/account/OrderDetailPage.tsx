@@ -93,7 +93,7 @@ function SubOrderPanel({
             )}
           </p>
         </div>
-        <div className="sm:text-right">
+        <div className="sm:text-end">
           <StatusChip status={subOrder.status} />
           <p className="mt-1 text-xs text-slate-500">
             {deliveryNote({ ...shipment, status: subOrder.status })}
@@ -122,7 +122,7 @@ function SubOrderPanel({
                   </Link>
                 )}
               </div>
-              <div className="shrink-0 text-right">
+              <div className="shrink-0 text-end">
                 <p className="font-semibold text-navy">{formatMoney(item.totalPaise)}</p>
                 {item.unitMrpPaise > item.unitPricePaise && (
                   <p className="text-xs text-slate-500 line-through">
@@ -212,7 +212,7 @@ function SubOrderPanel({
             )}
           </div>
 
-          <div className="md:border-l md:border-slate-100 md:pl-6">
+          <div className="md:border-s md:border-slate-100 md:ps-6">
             <h3 className="mb-3 text-sm font-semibold text-navy">Tracking</h3>
             {shipment.awb && (
               <p className="mb-3 text-xs text-slate-500">

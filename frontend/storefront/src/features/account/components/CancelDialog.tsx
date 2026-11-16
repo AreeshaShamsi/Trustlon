@@ -112,7 +112,7 @@ export function CancelDialog({
             onChange={(e) => setComment(e.target.value)}
             className={`${inputClass(false)} h-auto py-2`}
           />
-          <p className="mt-1 text-right text-xs text-slate-500">{comment.length}/250</p>
+          <p className="mt-1 text-end text-xs text-slate-500">{comment.length}/250</p>
         </div>
         <Alert tone="info">
           {refundNote(order.payment.method, order.payment.status, subOrder.totals.totalPaise)}

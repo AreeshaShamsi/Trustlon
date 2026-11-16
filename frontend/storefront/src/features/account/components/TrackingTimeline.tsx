@@ -70,7 +70,7 @@ export function TrackingTimeline({
             <span
               aria-hidden
               className={cn(
-                'absolute left-[9px] top-5 h-[calc(100%-12px)] w-0.5',
+                'absolute start-[9px] top-5 h-[calc(100%-12px)] w-0.5',
                 steps[index + 1].done ? 'bg-teal' : 'bg-slate-200',
               )}
             />

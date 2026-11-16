@@ -213,6 +213,12 @@ export function SignupForm() {
         />
         <MobileField
           label={t.fields.mobile}
+          country={watch('mobileCountry') || DEFAULT_COUNTRY}
+          onCountryChange={(country) =>
+            setValue('mobileCountry', country, { shouldValidate: formState.isSubmitted })
+          }
+          locale={language}
+          countryLabel={t.fields.country}
           placeholder={t.placeholders.mobile}
           error={errors.mobileNational?.message}
           {...register('mobileNational')}

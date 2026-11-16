@@ -38,11 +38,11 @@ export const mr: PartialDictionary = {
     confirmNewPassword: 'नवीन पासवर्डची पुष्टी करा',
     referralCode: 'रेफरल कोड',
   },
-  placeholders: { fullName: 'पहिले आणि आडनाव', mobile: '10 अंकी मोबाइल नंबर' },
+  placeholders: { fullName: 'पहिले आणि आडनाव', mobile: 'मोबाइल नंबर' },
   validation: {
     fullName: 'तुमचे पूर्ण नाव लिहा (2 ते 100 अक्षरे)',
     email: 'योग्य ईमेल पत्ता लिहा',
-    mobile: 'योग्य 10 अंकी भारतीय मोबाइल नंबर लिहा',
+    mobile: 'निवडलेल्या देशासाठी योग्य मोबाइल नंबर लिहा (भारतासाठी 10 अंक)',
     nameLetters: 'फक्त अक्षरे वापरा (स्पेस, टिंब आणि हायफन चालतील)',
     emailTypo: 'तुम्हाला हे म्हणायचे होते का',
     password: 'तुमचा पासवर्ड सर्व अटी पूर्ण करत नाही',

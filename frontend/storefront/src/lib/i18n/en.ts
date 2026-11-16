@@ -43,12 +43,12 @@ export const en = {
   placeholders: {
     fullName: 'First and last name',
     email: 'you@example.com',
-    mobile: '10-digit mobile number',
+    mobile: 'Mobile number',
   },
   validation: {
     fullName: 'Enter your full name (2 to 100 characters)',
     email: 'Enter a valid email address',
-    mobile: 'Enter a valid 10-digit Indian mobile number',
+    mobile: 'Enter a valid mobile number for the selected country (10 digits for India)',
     nameLetters: 'Use letters only (spaces, dots and hyphens are fine)',
     emailTypo: 'Did you mean',
     password: 'Your password does not meet all the requirements',

@@ -1,17 +1,18 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
   cn,
   Dialog,
   focusRing,
-  inputClass,
   PasswordField,
+  ListSelect,
   MobileField,
   TextField,
 } from '@/design-system';
+import { LanguagePicker } from '@/components/LanguagePicker';
 import { useAuth } from '@/features/auth';
 import { OtpInput } from '@/features/auth/components/OtpInput';
 import { PasswordRequirements } from '@/features/auth/components/PasswordRequirements';
@@ -19,13 +20,12 @@ import { meetsPasswordRules } from '@/features/auth/schemas';
 import { ApiError } from '@/lib/http';
 import {
   fromApiLanguage,
-  LANGUAGES,
   toApiLanguage,
   useI18n,
   type Language,
 } from '@/lib/i18n/language-provider';
-import { formatInternational } from '@/lib/phone';
-import { isValidEmail, isValidName, suggestEmail, toIndianMobile } from '@/lib/validation';
+import { DEFAULT_COUNTRY, formatInternational, type CountryCode } from '@/lib/phone';
+import { isValidEmail, isValidName, suggestEmail, toMobileE164 } from '@/lib/validation';
 import { accountApi } from './api';
 import { EmptyState, PageHeader, Panel, secondaryAction, Skeleton } from './components/ui';
 import { formatDate, formatDateTime, formatMoney } from './format';
@@ -123,7 +123,6 @@ function ProfileForm({
   profile: SettingsProfile;
   onSaved: (profile: SettingsProfile) => void;
 }) {
-  const genderId = useId();
   const { updateUser } = useAuth();
   const [fullName, setFullName] = useState(profile.fullName);
   const [dateOfBirth, setDateOfBirth] = useState(profile.dateOfBirth ?? '');
@@ -198,24 +197,12 @@ function ProfileForm({
           hint="Optional. We use it for birthday offers only."
           onChange={(e) => setDateOfBirth(e.target.value)}
         />
-        <div>
-          <label htmlFor={genderId} className="mb-1.5 block text-sm font-medium text-navy">
-            Gender
-          </label>
-          <select
-            id={genderId}
-            value={gender}
-            onChange={(e) => setGender(e.target.value as Gender | '')}
-            className={inputClass(false)}
-          >
-            <option value="">Not set</option>
-            {GENDERS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <ListSelect<Gender | 'NONE'>
+          label="Gender"
+          value={gender || 'NONE'}
+          onChange={(next) => setGender(next === 'NONE' ? '' : next)}
+          options={[{ value: 'NONE', label: 'Not set' }, ...GENDERS]}
+        />
       </div>
       <div aria-live="polite">{status && <Alert tone={status.tone}>{status.text}</Alert>}</div>
       <div className="sm:w-48">
@@ -241,6 +228,8 @@ function ContactDialog({
   onSaved: (profile: SettingsProfile) => void;
 }) {
   const isEmail = type === 'email';
+  const { language } = useI18n();
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [step, setStep] = useState<'enter' | 'code'>('enter');
   const [email, setEmail] = useState('');
   const [national, setNational] = useState('');
@@ -256,12 +245,17 @@ function ContactDialog({
   const sendCode = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    const value = isEmail ? email.trim().toLowerCase() : toIndianMobile(national);
+    const value = isEmail ? email.trim().toLowerCase() : toMobileE164(national, phoneCountry);
     const errors: typeof fieldErrors = {};
     if (isEmail && !isValidEmail(value ?? '')) {
       errors.value = 'Enter a valid email address, e.g. name@example.com';
     }
-    if (!isEmail && !value) errors.value = 'Enter a valid 10-digit Indian mobile number';
+    if (!isEmail && !value) {
+      errors.value =
+        phoneCountry === 'IN'
+          ? 'Enter a valid 10-digit Indian mobile number'
+          : 'Enter a valid mobile number for this country';
+    }
     if (profile.hasPassword && !password) errors.currentPassword = 'Enter your current password';
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0 || !value) return;
@@ -357,6 +351,9 @@ function ContactDialog({
           ) : (
             <MobileField
               label="New mobile number"
+              country={phoneCountry}
+              onCountryChange={setPhoneCountry}
+              locale={language}
               placeholder="10-digit mobile number"
               value={national}
               error={fieldErrors.value}
@@ -780,11 +777,11 @@ function NotificationPreferences({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-left text-sm">
+        <table className="w-full min-w-[560px] text-start text-sm">
           <caption className="sr-only">Choose how we contact you for each kind of message</caption>
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
             <tr>
-              <th scope="col" className="py-2 pr-4 font-medium">
+              <th scope="col" className="py-2 pe-4 font-medium">
                 Message
               </th>
               {CHANNELS.map((channel) => (
@@ -801,7 +798,7 @@ function NotificationPreferences({
           <tbody className="divide-y divide-slate-100">
             {EVENTS.map((event) => (
               <tr key={event.key}>
-                <th scope="row" className="py-3 pr-4 font-normal">
+                <th scope="row" className="py-3 pe-4 font-normal">
                   <span className="block font-medium text-navy">{event.label}</span>
                   <span className="block text-xs text-slate-500">{event.description}</span>
                 </th>
@@ -827,7 +824,9 @@ function NotificationPreferences({
                           aria-hidden
                           className={cn(
                             'inline-block h-5 w-5 rounded-full bg-white shadow-sm transition',
-                            on ? 'translate-x-[18px]' : 'translate-x-0.5',
+                            on
+                              ? 'translate-x-[18px] rtl:-translate-x-[18px]'
+                              : 'translate-x-0.5 rtl:-translate-x-0.5',
                           )}
                         />
                       </button>
@@ -859,78 +858,47 @@ function LanguageSelector({
   profile: SettingsProfile;
   onSaved: (profile: SettingsProfile) => void;
 }) {
-  const { language, setLanguage } = useI18n();
+  const { language } = useI18n();
   const { updateUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const saved: Language = fromApiLanguage(profile.preferredLanguage);
-  const options = LANGUAGES.map((l) => ({
-    value: l.code,
-    label: l.native,
-    name: l.name,
-    sample: l.sample,
-  }));
+  const [saved, setSaved] = useState(false);
+  const preferred: Language = fromApiLanguage(profile.preferredLanguage);
 
   const choose = async (value: Language) => {
     setError(null);
-    setLanguage(value);
+    setSaved(false);
     try {
       const { profile: next } = await accountApi.updateProfile({
         preferredLanguage: toApiLanguage(value),
       });
       updateUser({ preferredLanguage: next.preferredLanguage });
       onSaved(next);
+      setSaved(true);
     } catch {
       setError('We couldn’t save your language. It still applies on this device.');
     }
   };
 
   return (
-    <fieldset>
-      <legend className="sr-only">Preferred language</legend>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {options.map((option) => {
-          const checked = saved === option.value;
-          return (
-            <label
-              key={option.value}
-              className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-lg border p-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal',
-                checked ? 'border-navy bg-navy-50' : 'border-slate-200 hover:border-slate-300',
-              )}
-            >
-              <input
-                type="radio"
-                name="language"
-                value={option.value}
-                checked={checked}
-                onChange={() => choose(option.value)}
-                className="h-4 w-4 accent-teal"
-              />
-              <span>
-                <span className="block font-semibold text-navy" lang={option.value}>
-                  {option.label}
-                  {option.value !== 'en' && (
-                    <span className="ml-1.5 text-xs font-normal text-slate-500">{option.name}</span>
-                  )}
-                </span>
-                <span className="block text-xs text-slate-500" lang={option.value}>
-                  {option.sample}
-                </span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-      <p className="mt-3 text-xs text-slate-500">
-        Used for messages, invoices and the site when you sign in.
-        {language !== saved && ' This device is showing a different language right now.'}
+    <div className="max-w-md">
+      <LanguagePicker
+        variant="field"
+        label="Preferred language"
+        value={preferred}
+        onChange={choose}
+        align="start"
+        hint={
+          <>
+            Used for messages, invoices and the site when you sign in.
+            {language !== preferred && ' This device is showing a different language right now.'}
+          </>
+        }
+      />
+      <p aria-live="polite" className="mt-2 min-h-5 text-xs">
+        {saved && <span className="text-teal-600">Language saved.</span>}
+        {error && <span className="text-red-600">{error}</span>}
       </p>
-      {error && (
-        <p role="alert" className="mt-2 text-xs text-red-600">
-          {error}
-        </p>
-      )}
-    </fieldset>
+    </div>
   );
 }
 
@@ -951,7 +919,6 @@ function DeleteAccountDialog({
   overview: SettingsOverview;
   onClose: () => void;
 }) {
-  const reasonId = useId();
   const router = useRouter();
   const { endSession } = useAuth();
   const { deletion, profile } = overview;
@@ -1008,7 +975,7 @@ function DeleteAccountDialog({
         <form onSubmit={submit} noValidate className="space-y-5">
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             <p className="font-semibold">This can’t be undone.</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
+            <ul className="mt-2 list-disc space-y-1 ps-5">
               <li>Your name, email, mobile, addresses, wishlist, cart and alerts are erased.</li>
               {(deletion.walletBalancePaise > 0 || deletion.coins > 0) && (
                 <li>
@@ -1023,22 +990,13 @@ function DeleteAccountDialog({
               </li>
             </ul>
           </div>
-          <div>
-            <label htmlFor={reasonId} className="mb-1.5 block text-sm font-medium text-navy">
-              Why are you leaving? <span className="font-normal text-slate-500">(optional)</span>
-            </label>
-            <select
-              id={reasonId}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className={inputClass(false)}
-            >
-              <option value="">Choose a reason</option>
-              {DELETE_REASONS.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
-          </div>
+          <ListSelect
+            label="Why are you leaving? (optional)"
+            placeholder="Choose a reason"
+            value={reason}
+            onChange={setReason}
+            options={DELETE_REASONS.map((option) => ({ value: option, label: option }))}
+          />
           {profile.hasPassword && (
             <PasswordField
               label="Password"

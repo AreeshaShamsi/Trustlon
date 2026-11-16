@@ -33,6 +33,7 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(function
   return (
     <Field id={inputId} label={label} error={error} hint={hint} aside={aside}>
       <div
+        dir="ltr"
         className={cx(
           'flex h-11 w-full rounded-lg border bg-white shadow-sm transition focus-within:ring-4',
           error
@@ -40,7 +41,7 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(function
             : 'border-slate-300 hover:border-slate-400 focus-within:border-teal focus-within:ring-teal/15',
         )}
       >
-        <div className="relative flex shrink-0 items-center gap-1.5 border-r border-slate-200 pl-3 pr-2 text-sm text-navy">
+        <div className="relative flex shrink-0 items-center gap-1.5 border-e border-slate-200 ps-3 pe-2 text-sm text-navy">
           <span className="font-medium">{country}</span>
           <span className="text-slate-500">{selected?.dialCode}</span>
           <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-slate-400">
@@ -67,7 +68,7 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(function
           autoComplete="tel-national"
           aria-invalid={Boolean(error) || undefined}
           aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
-          className="h-full min-w-0 flex-1 rounded-r-lg bg-transparent px-3 text-sm text-navy outline-none placeholder:text-slate-400"
+          className="h-full min-w-0 flex-1 rounded-e-lg bg-transparent px-3 text-sm text-navy outline-none placeholder:text-slate-400"
           {...props}
         />
       </div>

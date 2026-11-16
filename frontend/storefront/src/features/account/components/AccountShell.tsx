@@ -33,7 +33,7 @@ const NAV: NavItem[] = [
 ];
 
 const itemClass =
-  'flex min-h-11 w-full shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 text-left text-sm';
+  'flex min-h-11 w-full shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 text-start text-sm';
 
 function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
   const pathname = usePathname();

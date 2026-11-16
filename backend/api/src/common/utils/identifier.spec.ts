@@ -1,6 +1,7 @@
 import {
   normalizeEmail,
   normalizeIndianMobile,
+  normalizeMobile,
   normalizePhone,
   parseIdentifier,
   PERSON_NAME,
@@ -51,9 +52,19 @@ describe('identifier utils', () => {
     expect(normalizeEmail(input)).toBe(expected);
   });
 
-  it('detects identifier type and only accepts Indian mobiles', () => {
+  it.each([
+    ['98765 43210', '+919876543210'],
+    ['+91 98765 43210', '+919876543210'],
+    ['+44 7911 123456', '+447911123456'],
+    ['+91 22 2345 6789', null],
+    ['5876543210', null],
+  ])('normalizeMobile(%s) = %s', (input, expected) => {
+    expect(normalizeMobile(input)).toBe(expected);
+  });
+
+  it('detects identifier type', () => {
     expect(parseIdentifier('98765 43210')).toEqual({ type: 'mobile', value: '+919876543210' });
-    expect(parseIdentifier('+12133734253')).toBeNull();
+    expect(parseIdentifier('+12133734253')).toEqual({ type: 'mobile', value: '+12133734253' });
     expect(parseIdentifier('a@b.in')).toEqual({ type: 'email', value: 'a@b.in' });
     expect(parseIdentifier('abc')).toBeNull();
   });

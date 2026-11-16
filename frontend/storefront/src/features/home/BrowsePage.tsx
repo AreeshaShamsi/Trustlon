@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Alert, Button, typography } from '@/design-system';
+import { Alert, Button, ListSelect, typography } from '@/design-system';
 import { ApiError } from '@/lib/http';
 import { homeApi } from './api';
 import { CategoryNav } from './components/CategoryNav';
@@ -170,20 +170,21 @@ function ProductList({ query }: { query: ProductQuery }) {
         <p className="text-sm text-slate-500" aria-live="polite">
           {state === 'loading' && items.length === 0 ? 'Loading…' : `${total} products`}
         </p>
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-slate-500">Sort by</span>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as ProductSort)}
-            className="h-11 rounded-lg border border-slate-300 bg-white px-3"
-          >
-            {SORTS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-slate-500" aria-hidden>
+            Sort by
+          </span>
+          <div className="w-52">
+            <ListSelect<ProductSort>
+              label="Sort by"
+              hideLabel
+              value={sort}
+              onChange={setSort}
+              options={SORTS.map((option) => ({ value: option.value, label: option.label }))}
+              align="end"
+            />
+          </div>
+        </div>
       </div>
       {state === 'loading' && items.length === 0 ? (
         <SectionSkeleton cards={10} title={false} />

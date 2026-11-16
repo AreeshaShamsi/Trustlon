@@ -66,3 +66,12 @@ export function toE164(national: string, country: CountryCode): string | null {
 export function formatInternational(e164: string): string {
   return parsePhoneNumberFromString(e164)?.formatInternational() ?? e164;
 }
+
+/** Splits +919876543210 into { country: 'IN', national: '9876543210' } for editing forms. */
+export function splitE164(e164: string): { country: CountryCode; national: string } {
+  const phone = parsePhoneNumberFromString(e164);
+  return {
+    country: (phone?.country ?? DEFAULT_COUNTRY) as CountryCode,
+    national: phone ? String(phone.nationalNumber) : e164.replace(/^\+91/, ''),
+  };
+}

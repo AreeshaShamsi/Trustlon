@@ -13,12 +13,13 @@ import {
 } from 'class-validator';
 import {
   EMAIL_PATTERN,
-  INDIAN_MOBILE,
+  MOBILE_RULE_MESSAGE,
   normalizeEmail,
-  normalizeIndianMobile,
+  normalizeMobile,
   PERSON_NAME,
   PERSON_NAME_MESSAGE,
 } from '../../common/utils/identifier';
+import { IsMobile } from '../../common/validation/is-mobile';
 import { MAX_PRICE_PAISE, MIN_PRICE_PAISE, PRODUCT_GST_RATES_BPS } from './fees';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -61,8 +62,8 @@ export class VendorLeadDto {
   @Length(2, 160, { message: 'Enter your business name' })
   businessName!: string;
 
-  @Transform(({ value }) => normalizeIndianMobile(value) ?? value)
-  @Matches(INDIAN_MOBILE, { message: 'Enter a valid 10-digit Indian mobile number' })
+  @Transform(({ value }) => normalizeMobile(value) ?? value)
+  @IsMobile({ message: MOBILE_RULE_MESSAGE })
   mobile!: string;
 
   @Transform(({ value }) => normalizeEmail(value) ?? value)

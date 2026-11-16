@@ -35,7 +35,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
         </label>
       </div>
       {error && (
-        <p id={`${inputId}-error`} role="alert" className="mt-1 pl-7 text-xs text-red-600">
+        <p id={`${inputId}-error`} role="alert" className="mt-1 ps-7 text-xs text-red-600">
           {error}
         </p>
       )}

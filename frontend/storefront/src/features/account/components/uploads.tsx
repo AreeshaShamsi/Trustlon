@@ -244,7 +244,7 @@ export function StarInput({
             />
           </label>
         ))}
-        <span className="ml-2 text-sm text-slate-500">
+        <span className="ms-2 text-sm text-slate-500">
           {value ? labels[value - 1] : 'Tap a star'}
         </span>
       </div>

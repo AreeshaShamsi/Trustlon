@@ -1,3 +1,5 @@
+import { toE164, type CountryCode } from '@/lib/phone';
+
 /**
  * Field rules shared by every form in the storefront. The API checks the same rules, so a value
  * that passes here is not rejected later.
@@ -29,6 +31,31 @@ export function mobileDigits(input: string): string {
   if (digits.length > 10 && digits.startsWith('91')) digits = digits.slice(2);
   if (digits.length > 10 && digits.startsWith('0')) digits = digits.slice(1);
   return digits.slice(0, 10);
+}
+
+/**
+ * National digits while typing, for any country. India keeps 10 digits (a pasted +91 or 0 is
+ * dropped); other countries drop their pasted calling code and allow up to 14 digits.
+ */
+export function phoneDigits(input: string, country: string, dialCode: string): string {
+  if (country === 'IN') return mobileDigits(input);
+  let digits = input.replace(/\D/g, '');
+  const code = dialCode.replace(/\D/g, '');
+  if (input.trim().startsWith('+') && code && digits.startsWith(code))
+    digits = digits.slice(code.length);
+  return digits.slice(0, 14);
+}
+
+/**
+ * Full number in international format (+919876543210) or null. India accepts mobile numbers
+ * only (10 digits starting 6 to 9); other countries follow that country's numbering plan.
+ */
+export function toMobileE164(national: string, country: string): string | null {
+  if (country === 'IN') return toIndianMobile(national);
+  const number = toE164(national, country as CountryCode);
+  // A number that parses into India must still be an Indian mobile.
+  if (number?.startsWith('+91')) return toIndianMobile(number);
+  return number;
 }
 
 export const PINCODE_PATTERN = /^[1-9]\d{5}$/;

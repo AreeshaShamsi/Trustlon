@@ -33,6 +33,22 @@ export function normalizeIndianMobile(input: unknown): string | null {
   return match ? `+91${match[1]}` : null;
 }
 
+/**
+ * Customer mobile numbers: Indian by default (10 digits starting 6 to 9, with or without +91 or 0),
+ * or any valid mobile number written with its +country code. Returns E.164 or null.
+ */
+export function normalizeMobile(input: unknown): string | null {
+  if (typeof input !== 'string' || input.trim() === '') return null;
+  const raw = input.trim();
+  if (!raw.startsWith('+')) return normalizeIndianMobile(raw);
+  const e164 = normalizePhone(raw);
+  if (!e164) return null;
+  return e164.startsWith('+91') ? normalizeIndianMobile(e164) : e164;
+}
+
+export const MOBILE_RULE_MESSAGE =
+  'Enter a valid mobile number (10 digits for India, or with the country code)';
+
 /** ISO 3166-1 alpha-2 region of an E.164 number, e.g. "IN". */
 export function phoneRegion(e164: string): string | null {
   return parsePhoneNumberFromString(e164)?.country ?? null;
@@ -50,7 +66,7 @@ export function parseIdentifier(input: unknown): Identifier | null {
     const email = normalizeEmail(input);
     return email ? { type: 'email', value: email } : null;
   }
-  const mobile = normalizeIndianMobile(input);
+  const mobile = normalizeMobile(input);
   return mobile ? { type: 'mobile', value: mobile } : null;
 }
 

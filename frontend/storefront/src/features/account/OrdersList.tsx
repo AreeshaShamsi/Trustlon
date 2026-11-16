@@ -96,7 +96,7 @@ function OrderFilters({
           <div className="relative">
             <Icon
               name="search"
-              className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-slate-400"
+              className="pointer-events-none absolute start-3 top-3 h-5 w-5 text-slate-400"
             />
             <input
               id={searchId}
@@ -105,7 +105,7 @@ function OrderFilters({
               maxLength={100}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. headphones"
-              className={cn(inputClass(false), 'pl-10')}
+              className={cn(inputClass(false), 'ps-10')}
             />
           </div>
         </div>

@@ -133,7 +133,7 @@ function LinkGenerator({ onCreated }: { onCreated: (links: AffiliateLink[]) => v
       <div className="relative mt-4">
         <Icon
           name="search"
-          className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-slate-400"
+          className="pointer-events-none absolute start-3 top-3 h-5 w-5 text-slate-400"
         />
         <input
           id={inputId}
@@ -141,7 +141,7 @@ function LinkGenerator({ onCreated }: { onCreated: (links: AffiliateLink[]) => v
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search for a product"
-          className={cn(inputClass(false), 'pl-10')}
+          className={cn(inputClass(false), 'ps-10')}
         />
       </div>
       {error && (
@@ -306,19 +306,19 @@ export function AffiliatePage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] text-left text-sm">
+              <table className="w-full min-w-[560px] text-start text-sm">
                 <thead className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th scope="col" className="py-2 pr-4 font-medium">
+                    <th scope="col" className="py-2 pe-4 font-medium">
                       Order
                     </th>
-                    <th scope="col" className="py-2 pr-4 font-medium">
+                    <th scope="col" className="py-2 pe-4 font-medium">
                       Product
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-right font-medium">
+                    <th scope="col" className="py-2 pe-4 text-end font-medium">
                       Sale
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-right font-medium">
+                    <th scope="col" className="py-2 pe-4 text-end font-medium">
                       Commission
                     </th>
                     <th scope="col" className="py-2 font-medium">
@@ -329,17 +329,17 @@ export function AffiliatePage() {
                 <tbody className="divide-y divide-slate-100">
                   {earnings.map((earning) => (
                     <tr key={earning.id} className="align-top">
-                      <td className="py-3 pr-4">
+                      <td className="py-3 pe-4">
                         <span className="font-medium text-navy">#{earning.orderNumber}</span>
                         <span className="block text-xs text-slate-500">
                           {formatDate(earning.createdAt)}
                         </span>
                       </td>
-                      <td className="py-3 pr-4 text-navy">{earning.productName}</td>
-                      <td className="py-3 pr-4 text-right text-slate-600">
+                      <td className="py-3 pe-4 text-navy">{earning.productName}</td>
+                      <td className="py-3 pe-4 text-end text-slate-600">
                         {formatMoney(earning.saleAmountPaise)}
                       </td>
-                      <td className="py-3 pr-4 text-right font-semibold text-navy">
+                      <td className="py-3 pe-4 text-end font-semibold text-navy">
                         {formatMoney(earning.commissionPaise)}
                       </td>
                       <td className="py-3">

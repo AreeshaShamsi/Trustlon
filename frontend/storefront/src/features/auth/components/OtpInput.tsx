@@ -40,7 +40,7 @@ function CodeBoxes({
   };
 
   return (
-    <div className="grid grid-cols-6 gap-2 sm:gap-3" onPaste={handlePaste}>
+    <div dir="ltr" className="grid grid-cols-6 gap-2 sm:gap-3" onPaste={handlePaste}>
       {Array.from({ length: LENGTH }, (_, index) => (
         <input
           key={index}

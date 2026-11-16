@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
-import { Alert, Button, cn, focusRing, inputClass } from '@/design-system';
+import { Alert, Button, cn, focusRing, inputClass, ListSelect } from '@/design-system';
 import { Icon } from '@/features/home/components/Icon';
 import { ApiError } from '@/lib/http';
 import { accountApi } from './api';
@@ -270,25 +270,23 @@ export function ReturnRequestForm() {
                         </span>
                       </label>
                       {quantity > 0 && item.returnableQuantity > 1 && (
-                        <select
-                          aria-label={`Quantity of ${item.name} to return`}
-                          value={quantity}
-                          onChange={(e) =>
-                            setQuantities((current) => ({
-                              ...current,
-                              [item.orderItemId]: Number(e.target.value),
-                            }))
-                          }
-                          className={cn(inputClass(false), 'w-20')}
-                        >
-                          {Array.from({ length: item.returnableQuantity }, (_, i) => i + 1).map(
-                            (n) => (
-                              <option key={n} value={n}>
-                                {n}
-                              </option>
-                            ),
-                          )}
-                        </select>
+                        <div className="w-24">
+                          <ListSelect
+                            label={`Quantity of ${item.name} to return`}
+                            hideLabel
+                            value={String(quantity)}
+                            onChange={(next) =>
+                              setQuantities((current) => ({
+                                ...current,
+                                [item.orderItemId]: Number(next),
+                              }))
+                            }
+                            options={Array.from({ length: item.returnableQuantity }, (_, i) => ({
+                              value: String(i + 1),
+                              label: String(i + 1),
+                            }))}
+                          />
+                        </div>
                       )}
                     </li>
                   );
@@ -327,7 +325,7 @@ export function ReturnRequestForm() {
                   onChange={(e) => setComments(e.target.value)}
                   className={`${inputClass(false)} h-auto py-2`}
                 />
-                <p className="mt-1 text-right text-xs text-slate-500">{comments.length}/500</p>
+                <p className="mt-1 text-end text-xs text-slate-500">{comments.length}/500</p>
               </div>
             </Panel>
 
@@ -359,7 +357,7 @@ export function ReturnRequestForm() {
                       onClick={() => removePhoto(photo.key)}
                       aria-label="Remove photo"
                       className={cn(
-                        'absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-navy shadow-sm',
+                        'absolute -end-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-navy shadow-sm',
                         focusRing,
                       )}
                     >

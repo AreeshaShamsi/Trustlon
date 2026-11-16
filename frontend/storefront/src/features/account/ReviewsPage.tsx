@@ -156,7 +156,7 @@ function ReviewForm({
             placeholder="What did you like or dislike? How did you use it?"
             className={`${inputClass(false)} h-auto py-2`}
           />
-          <p className="mt-1 text-right text-xs text-slate-500">{body.length}/2000</p>
+          <p className="mt-1 text-end text-xs text-slate-500">{body.length}/2000</p>
         </div>
         <div>
           <p className="mb-2 text-sm font-medium text-navy">

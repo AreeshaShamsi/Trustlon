@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { CityField } from '@/components/location';
-import { Alert, Button, cn, focusRing, inputClass, MobileField, TextField } from '@/design-system';
+import { Alert, Button, cn, focusRing, ListSelect, MobileField, TextField } from '@/design-system';
 import { useAuth } from '@/features/auth';
 import { formatMoney } from '@/features/account/format';
 import { CategoryNav } from '@/features/home/components/CategoryNav';
@@ -16,8 +16,9 @@ import {
   isValidEmail,
   isValidName,
   suggestEmail,
-  toIndianMobile,
+  toMobileE164,
 } from '@/lib/validation';
+import { DEFAULT_COUNTRY, type CountryCode } from '@/lib/phone';
 import { sellApi, type CommissionRates, type FeeBreakdown } from './api';
 
 const VENDOR_PANEL_URL = process.env.NEXT_PUBLIC_VENDOR_PANEL_URL?.replace(/\/$/, '') || null;
@@ -299,49 +300,36 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
-              <div>
-                <label
-                  htmlFor={ids.category}
-                  className="mb-1.5 block text-sm font-medium text-navy"
-                >
-                  Category
-                </label>
-                <select
-                  id={ids.category}
-                  value={categoryId}
-                  disabled={!rates}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className={inputClass(false)}
-                >
-                  <option value="">
-                    Other ({percent(rates?.defaultCommissionPercent ?? 10)} commission)
-                  </option>
-                  {rates?.categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {(language === 'hi' && category.nameHi) || category.name} (
-                      {percent(category.commissionPercent)})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <ListSelect
+                label="Category"
+                value={categoryId || 'OTHER'}
+                disabled={!rates}
+                onChange={(next) => setCategoryId(next === 'OTHER' ? '' : next)}
+                searchPlaceholder="Search category"
+                options={[
+                  {
+                    value: 'OTHER',
+                    label: 'Other',
+                    detail: `${percent(rates?.defaultCommissionPercent ?? 10)} commission`,
+                  },
+                  ...(rates?.categories ?? []).map((category) => ({
+                    value: category.id,
+                    label: (language === 'hi' && category.nameHi) || category.name,
+                    detail: `${percent(category.commissionPercent)} commission`,
+                    keywords: category.name,
+                  })),
+                ]}
+              />
               <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label htmlFor={ids.gst} className="mb-1.5 block text-sm font-medium text-navy">
-                    Product GST rate
-                  </label>
-                  <select
-                    id={ids.gst}
-                    value={gstRate}
-                    onChange={(e) => setGstRate(Number(e.target.value))}
-                    className={inputClass(false)}
-                  >
-                    {(rates?.gstRates ?? [0, 5, 18, 40]).map((rate) => (
-                      <option key={rate} value={rate}>
-                        {rate}%
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <ListSelect
+                  label="Product GST rate"
+                  value={String(gstRate)}
+                  onChange={(next) => setGstRate(Number(next))}
+                  options={(rates?.gstRates ?? [0, 5, 18, 40]).map((rate) => ({
+                    value: String(rate),
+                    label: `${rate}%`,
+                  }))}
+                />
                 <TextField
                   id={ids.shipping}
                   label="Your shipping cost (₹)"
@@ -492,7 +480,6 @@ interface LeadErrors {
 }
 
 function LeadForm({ rates }: { rates: CommissionRates | null }) {
-  const categoryId = useId();
   const { user } = useAuth();
   const { language } = useI18n();
   const [values, setValues] = useState({
@@ -504,6 +491,7 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
     gstin: '',
   });
   const [national, setNational] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [errors, setErrors] = useState<LeadErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -526,11 +514,16 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFailure(null);
-    const mobile = toIndianMobile(national);
+    const mobile = toMobileE164(national, phoneCountry);
     const found: LeadErrors = {};
     if (!isValidName(values.contactName)) found.contactName = 'Enter your name using letters only';
     if (values.businessName.trim().length < 2) found.businessName = 'Enter your business name';
-    if (!mobile) found.mobile = 'Enter a valid 10-digit Indian mobile number';
+    if (!mobile) {
+      found.mobile =
+        phoneCountry === 'IN'
+          ? 'Enter a valid 10-digit Indian mobile number'
+          : 'Enter a valid mobile number for this country';
+    }
     if (!isValidEmail(values.email))
       found.email = 'Enter a valid email address, e.g. name@example.com';
     if (values.city.trim().length < 2) found.city = 'Enter your city';
@@ -631,6 +624,9 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
             />
             <MobileField
               label="Mobile number"
+              country={phoneCountry}
+              onCountryChange={setPhoneCountry}
+              locale={language}
               placeholder="10-digit mobile number"
               value={national}
               error={errors.mobile}
@@ -670,24 +666,18 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
               error={errors.city}
               onChange={(city) => setValues((current) => ({ ...current, city }))}
             />
-            <div>
-              <label htmlFor={categoryId} className="mb-1.5 block text-sm font-medium text-navy">
-                What do you sell? <span className="font-normal text-slate-500">(optional)</span>
-              </label>
-              <select
-                id={categoryId}
-                value={values.category}
-                onChange={set('category')}
-                className={inputClass(false)}
-              >
-                <option value="">Choose a category</option>
-                {rates?.categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {(language === 'hi' && category.nameHi) || category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <ListSelect
+              label="What do you sell? (optional)"
+              placeholder="Choose a category"
+              value={values.category}
+              onChange={(category) => setValues((current) => ({ ...current, category }))}
+              searchPlaceholder="Search category"
+              options={(rates?.categories ?? []).map((category) => ({
+                value: category.id,
+                label: (language === 'hi' && category.nameHi) || category.name,
+                keywords: category.name,
+              }))}
+            />
             <div className="sm:col-span-2">
               <TextField
                 label="GSTIN (optional)"

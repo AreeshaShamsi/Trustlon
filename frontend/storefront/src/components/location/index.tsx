@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
-import { cn, Combobox, focusRing, inputClass, TextField } from '@/design-system';
+import { useEffect, useMemo, useState } from 'react';
+import { Combobox, ListSelect, TextField } from '@/design-system';
 import { useI18n } from '@/lib/i18n/language-provider';
 import { countryName, locationApi, type CountryInfo, type PincodeSuggestion } from '@/lib/location';
 import { PINCODE_PATTERN } from '@/lib/validation';
@@ -39,50 +39,6 @@ export function useStates(country: string): string[] | null {
   return states;
 }
 
-function SelectField({
-  label,
-  value,
-  onChange,
-  error,
-  children,
-  disabled,
-  autoComplete,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-  children: React.ReactNode;
-  disabled?: boolean;
-  autoComplete?: string;
-}) {
-  const id = useId();
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-navy">
-        {label}
-      </label>
-      <select
-        id={id}
-        value={value}
-        disabled={disabled}
-        autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={Boolean(error) || undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className={cn(inputClass(Boolean(error)), focusRing)}
-      >
-        {children}
-      </select>
-      {error && (
-        <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs text-red-600">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
 /** Country picker with names in the visitor's language. India is listed first. */
 export function CountrySelect({
   value,
@@ -98,30 +54,27 @@ export function CountrySelect({
   error?: string;
 }) {
   const { language } = useI18n();
-  const sorted = useMemo(() => {
+  const options = useMemo(() => {
     const named = (countries ?? []).map((c) => ({
-      ...c,
+      value: c.code,
       label: countryName(c.code, language, c.name),
+      detail: c.code,
+      keywords: c.name,
     }));
     named.sort((a, b) => a.label.localeCompare(b.label, language));
-    const india = named.filter((c) => c.code === 'IN');
-    return [...india, ...named.filter((c) => c.code !== 'IN')];
+    return [...named.filter((c) => c.value === 'IN'), ...named.filter((c) => c.value !== 'IN')];
   }, [countries, language]);
   return (
-    <SelectField
+    <ListSelect
       label={label}
       value={value}
       onChange={onChange}
       error={error}
-      autoComplete="country"
-    >
-      {!countries && <option value={value}>{value}</option>}
-      {sorted.map((country) => (
-        <option key={country.code} value={country.code}>
-          {country.label}
-        </option>
-      ))}
-    </SelectField>
+      disabled={!countries}
+      options={options.length ? options : [{ value, label: value }]}
+      searchable
+      searchPlaceholder="Search country"
+    />
   );
 }
 
@@ -142,10 +95,11 @@ export function StateField({
   error?: string;
 }) {
   const states = useStates(country);
+  const fullLabel = optional ? `${label} (optional)` : label;
   if (states && states.length === 0) {
     return (
       <TextField
-        label={optional ? `${label} (optional)` : label}
+        label={fullLabel}
         autoComplete="address-level1"
         maxLength={60}
         value={value}
@@ -154,23 +108,18 @@ export function StateField({
       />
     );
   }
-  const inList = !value || !states || states.includes(value);
   return (
-    <SelectField
-      label={optional ? `${label} (optional)` : label}
-      value={inList ? value : ''}
+    <ListSelect
+      label={fullLabel}
+      value={!value || !states || states.includes(value) ? value : ''}
       onChange={onChange}
       error={error}
       disabled={!states}
-      autoComplete="address-level1"
-    >
-      <option value="">{states ? 'Choose' : 'Loading…'}</option>
-      {states?.map((state) => (
-        <option key={state} value={state}>
-          {state}
-        </option>
-      ))}
-    </SelectField>
+      placeholder={states ? 'Choose' : 'Loading…'}
+      options={(states ?? []).map((state) => ({ value: state, label: state }))}
+      searchable
+      searchPlaceholder="Search state"
+    />
   );
 }
 
