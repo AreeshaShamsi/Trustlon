@@ -6,7 +6,7 @@ import { homeApi } from '@/features/home/api';
 import { button, field, secondary } from '../../product/components/primitives';
 export function AddressSelector({ addresses, value, onSelect, onSaved }: { addresses: Address[]; value?: string; onSelect: (id: string) => void; onSaved: (addresses: Address[]) => void }) {
   const [adding, setAdding] = useState(false);
-  const [input, setInput] = useState<AddressInput>({ label: 'HOME', fullName: '', mobile: '', line1: '', pincode: '', city: '', state: '' });
+  const [input, setInput] = useState<AddressInput>({ label: 'HOME', fullName: '', mobile: '', line1: '', pincode: '', country: 'IN', city: '', state: '' });
   const [busy, setBusy] = useState(false);
   const [lookup, setLookup] = useState(false);
   const [validPin, setValidPin] = useState('');
