@@ -84,6 +84,19 @@ export interface StoreDetail extends Store {
 }
 
 export interface LocalSeller extends Store {
+  id: string;
+  storeName: string;
+  rating: number | null;
+  pickupPincode: string;
+  deliveryPromise: 'same_day' | 'next_day';
+  topProducts: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    image: string;
+    price: number;
+    pricePaise: number;
+  }>;
   area: string | null;
   category: string | null;
   pincode: string;

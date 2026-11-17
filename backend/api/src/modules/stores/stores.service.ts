@@ -1,15 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Vendor } from '@prisma/client';
-import { boundingBox, distanceKm } from '../../common/utils/geo';
+import { Prisma } from '@prisma/client';
+import { toPage } from '../../common/http/pagination';
+import { localEligibility, LocalRadius } from './local-rules';
+import { boundingBox } from '../../common/utils/geo';
 import { PrismaService } from '../../prisma/prisma.service';
 import { activeVendorWhere, liveProductWhere, productInclude } from '../catalog/catalog.queries';
 import { ProductsService } from '../catalog/products.service';
-import { ProductSummary } from '../catalog/product.presenter';
+
 import { PincodeService } from '../location/pincode.service';
 import { LocalSeller, StoreSummary, toStoreSummary } from './store.presenter';
-
-export const LOCAL_RADII_KM = [5, 10, 25] as const;
-export type LocalRadius = (typeof LOCAL_RADII_KM)[number];
 
 @Injectable()
 export class StoresService {
@@ -48,73 +47,117 @@ export class StoresService {
     return { ...toStoreSummary(vendor), description: vendor.description, productCount };
   }
 
-  /**
-   * Sellers with same-day delivery whose pickup pincode is within `radiusKm` of the customer.
-   * Returns `serviceable: false` with no sellers when the pincode is unknown.
-   */
-  async localSellers(
-    pincode: string,
-    radiusKm: LocalRadius,
-  ): Promise<{ pincode: string; radiusKm: number; serviceable: boolean; sellers: LocalSeller[] }> {
+  /** Both endpoints use exactly the same server-side eligibility rules. */
+  private async eligible(pincode: string, radius: LocalRadius) {
     const origin = await this.pincodes.find(pincode);
-    if (!origin || origin.latitude === null || origin.longitude === null) {
-      return { pincode, radiusKm, serviceable: false, sellers: [] };
+    if (!origin?.serviceable || origin.latitude == null || origin.longitude == null) {
+      return { serviceable: false, sellers: [] };
     }
-
-    const box = boundingBox(origin.latitude, origin.longitude, radiusKm);
+    const box = boundingBox(origin.latitude, origin.longitude, radius);
     const candidates = await this.prisma.vendor.findMany({
       where: {
         ...activeVendorWhere,
+        kycApprovedAt: { not: null },
         sameDayDelivery: true,
-        pickup: {
-          latitude: { gte: box.minLat, lte: box.maxLat },
-          longitude: { gte: box.minLng, lte: box.maxLng },
-        },
+        pickupPincode: { not: null },
+        OR: [
+          {
+            pickupLat: { gte: box.minLat, lte: box.maxLat },
+            pickupLng: { gte: box.minLng, lte: box.maxLng },
+          },
+          {
+            pickupLat: null,
+            pickupLng: null,
+            pickup: {
+              latitude: { gte: box.minLat, lte: box.maxLat },
+              longitude: { gte: box.minLng, lte: box.maxLng },
+            },
+          },
+        ],
       },
       include: { pickup: true },
-      take: 200,
     });
-
+    const now = new Date();
     const sellers = candidates
-      .map((vendor) => this.toLocalSeller(vendor, origin.latitude!, origin.longitude!))
-      .filter((seller): seller is LocalSeller => seller !== null && seller.distanceKm <= radiusKm)
-      .sort((a, b) => a.distanceKm - b.distanceKm || b.trustScore - a.trustScore);
-
-    return { pincode, radiusKm, serviceable: origin.serviceable, sellers };
+      .flatMap((vendor) => {
+        const eligible = localEligibility(vendor, origin.latitude!, origin.longitude!, radius, now);
+        return eligible ? [{ vendor, ...eligible }] : [];
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm || a.vendor.id.localeCompare(b.vendor.id));
+    return { serviceable: true, sellers };
   }
 
-  /** Products from local sellers, nearest seller first. */
-  async localProducts(pincode: string, radiusKm: LocalRadius, limit = 24): Promise<ProductSummary[]> {
-    const { sellers } = await this.localSellers(pincode, radiusKm);
-    if (sellers.length === 0) return [];
-    const order = new Map(sellers.map((seller, index) => [seller.slug, index]));
-
-    const rows = await this.prisma.product.findMany({
-      where: { ...liveProductWhere, vendor: { slug: { in: sellers.map((s) => s.slug) } } },
-      include: productInclude,
-      orderBy: [{ salesCount: 'desc' }],
-      take: limit,
-    });
-    rows.sort((a, b) => (order.get(a.vendor.slug) ?? 0) - (order.get(b.vendor.slug) ?? 0));
-    return this.products.present(rows);
-  }
-
-  private toLocalSeller(
-    vendor: Vendor & { pickup: { pincode: string; latitude: number | null; longitude: number | null } | null },
-    lat: number,
-    lng: number,
-  ): LocalSeller | null {
-    if (!vendor.pickup || vendor.pickup.latitude === null || vendor.pickup.longitude === null) {
-      return null;
-    }
-    const km = distanceKm(lat, lng, vendor.pickup.latitude, vendor.pickup.longitude);
+  async localSellers(pincode: string, radiusKm: LocalRadius, page = 1, pageSize = 24) {
+    const result = await this.eligible(pincode, radiusKm);
+    const selected = result.sellers.slice((page - 1) * pageSize, page * pageSize);
+    const sellers: LocalSeller[] = await Promise.all(
+      selected.map(async ({ vendor, distanceKm, deliveryPromise }) => {
+        const rows = await this.prisma.product.findMany({
+          where: { ...liveProductWhere, vendorId: vendor.id, stock: { gt: 0 } },
+          include: productInclude,
+          orderBy: [{ salesCount: 'desc' }, { id: 'asc' }],
+          take: 4,
+        });
+        const products = await this.products.present(rows);
+        return {
+          ...toStoreSummary(vendor),
+          id: vendor.id,
+          storeName: vendor.displayName,
+          rating: null,
+          area: vendor.localArea,
+          category: vendor.localCategory,
+          pincode: vendor.pickupPincode!,
+          pickupPincode: vendor.pickupPincode!,
+          distanceKm: Math.round(distanceKm * 10) / 10,
+          sameDayDelivery: vendor.sameDayDelivery,
+          deliveryPromise,
+          topProducts: products.map((p) => ({
+            id: p.id,
+            slug: p.slug,
+            name: p.name,
+            image: p.image,
+            price: p.pricePaise,
+            pricePaise: p.pricePaise,
+          })),
+        };
+      }),
+    );
     return {
-      ...toStoreSummary(vendor),
-      area: vendor.localArea,
-      category: vendor.localCategory,
-      pincode: vendor.pickup.pincode,
-      distanceKm: Math.round(km * 10) / 10,
-      sameDayDelivery: vendor.sameDayDelivery,
+      ...toPage(sellers, result.sellers.length, page, pageSize),
+      sellers,
+      pincode,
+      radiusKm,
+      serviceable: result.serviceable,
+    };
+  }
+
+  async localProducts(pincode: string, radiusKm: LocalRadius, page = 1, pageSize = 24) {
+    const result = await this.eligible(pincode, radiusKm);
+    const ids = result.sellers
+      .filter((s) => s.deliveryPromise === 'same_day')
+      .map((s) => s.vendor.id);
+    const where: Prisma.ProductWhereInput = {
+      ...liveProductWhere,
+      vendorId: { in: ids },
+      stock: { gt: 0 },
+    };
+    const [total, rows] = ids.length
+      ? await Promise.all([
+          this.prisma.product.count({ where }),
+          this.prisma.product.findMany({
+            where,
+            include: productInclude,
+            orderBy: [{ salesCount: 'desc' }, { id: 'asc' }],
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }),
+        ])
+      : ([0, []] as const);
+    return {
+      ...toPage(await this.products.present([...rows]), total, page, pageSize),
+      pincode,
+      radiusKm,
+      serviceable: result.serviceable,
     };
   }
 }

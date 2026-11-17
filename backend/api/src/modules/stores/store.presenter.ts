@@ -1,4 +1,5 @@
 import { Vendor } from '@prisma/client';
+import { DeliveryPromise } from './local-rules';
 
 export interface StoreSummary {
   slug: string;
@@ -13,6 +14,19 @@ export interface StoreSummary {
 }
 
 export interface LocalSeller extends StoreSummary {
+  id: string;
+  storeName: string;
+  rating: number | null;
+  pickupPincode: string;
+  deliveryPromise: DeliveryPromise;
+  topProducts: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    image: string;
+    price: number;
+    pricePaise: number;
+  }>;
   area: string | null;
   category: string | null;
   pincode: string;

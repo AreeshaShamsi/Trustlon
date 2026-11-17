@@ -8,7 +8,13 @@ import { useAuth } from '@/features/auth';
 import { SearchBar } from '../../search/SearchBar';
 import { useHome } from '../home-provider';
 import { Icon } from './Icon';
-export function HomeHeader({ searchQuery = '' }: { searchQuery?: string }) {
+export function HomeHeader({
+  searchQuery = '',
+  onChangeLocation,
+}: {
+  searchQuery?: string;
+  onChangeLocation?: () => void;
+}) {
   const home = useHome();
   const { language, setLanguage } = useI18n();
   const hi = language === 'hi';
@@ -30,7 +36,7 @@ export function HomeHeader({ searchQuery = '' }: { searchQuery?: string }) {
       <div className="grid w-full grid-cols-[1fr_auto] items-center gap-x-5 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[auto_auto_minmax(0,1fr)_auto] lg:px-8 lg:py-5">
         <BrandLogo />
         <button
-          onClick={() => home.setPanel('pincode')}
+          onClick={onChangeLocation ?? (() => home.setPanel('pincode'))}
           className={cn(
             'col-span-2 flex items-center gap-2 rounded-lg text-left lg:col-span-1',
             focusRing,

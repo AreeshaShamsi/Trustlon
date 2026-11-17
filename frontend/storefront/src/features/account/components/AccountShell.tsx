@@ -36,6 +36,7 @@ const itemClass =
   'flex min-h-11 w-full shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 text-start text-sm';
 
 function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
+  const { user } = useAuth();
   const pathname = usePathname();
   const home = useHome();
   const { t } = useI18n();
@@ -75,6 +76,23 @@ function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
             </Link>
           </li>
         ))}
+        {user?.role === 'VENDOR_OWNER' && (
+          <li>
+            <Link
+              href="/account/seller"
+              aria-current={isActive('/account/seller') ? 'page' : undefined}
+              className={cn(
+                itemClass,
+                focusRing,
+                isActive('/account/seller')
+                  ? 'bg-navy font-semibold text-white'
+                  : 'bg-white text-navy hover:bg-navy-50 lg:bg-transparent',
+              )}
+            >
+              Seller delivery
+            </Link>
+          </li>
+        )}
         <li className="lg:mt-2 lg:border-t lg:border-slate-100 lg:pt-2">
           <button
             type="button"

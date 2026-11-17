@@ -16,6 +16,7 @@
     "test": "node -r ../../realpath-patch.cjs ../../node_modules/jest/bin/jest.js --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "prisma:seed": "prisma db seed",
+    "prisma:seed:local": "ts-node prisma/seed-local.ts",
     "location:pincodes": "ts-node prisma/import-pincodes.ts",
     "location:cities": "ts-node prisma/import-cities.ts"
   },

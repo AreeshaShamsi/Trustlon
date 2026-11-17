@@ -35,14 +35,17 @@ export function LocalSellersStrip({ showViewAll = true }: { showViewAll?: boolea
           </h2>
           <p className="mt-2 text-sm text-slate-500">
             Neighbourhood sellers within 10 km of {pincode} ·{' '}
-            <button className="font-medium text-teal-600 hover:underline" onClick={() => setPanel('pincode')}>
+            <button
+              className="font-medium text-teal-600 hover:underline"
+              onClick={() => setPanel('pincode')}
+            >
               Change
             </button>
           </p>
         </div>
         {showViewAll && sellers && sellers.length > 0 && (
           <Link
-            href="/browse/local"
+            href={`/local?pincode=${encodeURIComponent(pincode)}&radius=10`}
             className="inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-teal-600"
           >
             Explore local
@@ -80,11 +83,15 @@ export function LocalSellersStrip({ showViewAll = true }: { showViewAll?: boolea
                 <p className="mt-1 text-xs text-slate-500">
                   {seller.area ?? seller.pincode} · {seller.distanceKm.toFixed(1)} km away
                 </p>
-                {seller.category && <p className="mt-2 text-xs text-slate-500">{seller.category}</p>}
+                {seller.category && (
+                  <p className="mt-2 text-xs text-slate-500">{seller.category}</p>
+                )}
                 {seller.sameDayDelivery && (
                   <span className="mt-3 inline-flex items-center gap-1 rounded bg-teal-50 px-2 py-1 text-[10px] text-teal-600">
                     <Icon name="truck" className="h-3 w-3" />
-                    Same-day delivery
+                    {seller.deliveryPromise === 'next_day'
+                      ? 'Next-day delivery'
+                      : 'Same-day delivery'}
                   </span>
                 )}
               </div>

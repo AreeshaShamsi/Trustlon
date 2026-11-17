@@ -30,6 +30,12 @@ model Vendor {
   isFeatured      Boolean      @default(false) @map("is_featured")
   featuredOrder   Int          @default(0) @map("featured_order")
   pickupPincode   String?      @map("pickup_pincode") @db.Char(6)
+  pickupAddress   String?      @map("pickup_address") @db.VarChar(240)
+  pickupLat       Float?       @map("pickup_lat")
+  pickupLng       Float?       @map("pickup_lng")
+  /// Local India time, HH:mm. Null means no daily cutoff.
+  deliveryCutoffTime String?   @map("delivery_cutoff_time") @db.VarChar(5)
+  nextDayDelivery Boolean      @default(false) @map("next_day_delivery")
   localArea       String?      @map("local_area") @db.VarChar(120)
   localCategory   String?      @map("local_category") @db.VarChar(120)
   sameDayDelivery Boolean      @default(false) @map("same_day_delivery")
@@ -45,6 +51,7 @@ model Vendor {
 
   @@index([status, isFeatured])
   @@index([pickupPincode])
+  @@index([status, sameDayDelivery, pickupLat, pickupLng])
   @@map("vendors")
 }
 

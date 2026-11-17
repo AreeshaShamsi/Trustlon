@@ -66,6 +66,16 @@ export function CategoryNav() {
             </button>
           ))}
           <Link
+            href="/local"
+            className={cn(
+              'flex min-h-12 items-center gap-2 rounded-lg px-2 text-sm font-medium hover:text-teal-600',
+              focusRing,
+            )}
+          >
+            <Icon name="pin" className="h-4 w-4" />
+            Local
+          </Link>
+          <Link
             href="/browse/deals"
             className="flex min-h-12 items-center gap-2 px-2 font-semibold text-teal-600"
           >
@@ -80,9 +90,7 @@ export function CategoryNav() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="mb-4 text-lg font-semibold">
-                  Explore {label(category)}
-                </p>
+                <p className="mb-4 text-lg font-semibold">Explore {label(category)}</p>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   {category.children.map((child) => (
                     <Link
