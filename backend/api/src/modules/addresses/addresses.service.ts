@@ -16,6 +16,7 @@ import {
 } from '../location/address-rules';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PincodeService } from '../location/pincode.service';
+import { SiteSettingsService } from '../site/site-settings.service';
 import { AddressDto } from './dto';
 
 export const MAX_ADDRESSES = 20;
@@ -74,6 +75,7 @@ export class AddressesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pincodes: PincodeService,
+    private readonly site: SiteSettingsService,
   ) {}
 
   async list(userId: string): Promise<AddressView[]> {
@@ -151,6 +153,9 @@ export class AddressesService {
     const country = dto.country ?? 'IN';
     if (!isCountryCode(country)) throw fail('country', 'Choose a country');
     const india = country === 'IN';
+    if (!india && !(await this.site.get('features')).internationalAddresses) {
+      throw fail('country', 'Addresses outside India are not available right now');
+    }
 
     const mobile = india
       ? normalizeIndianMobile(dto.mobile)

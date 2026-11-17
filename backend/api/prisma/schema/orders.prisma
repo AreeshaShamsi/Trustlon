@@ -74,6 +74,7 @@ model Order {
   user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
   subOrders      SubOrder[]
   supportTickets SupportTicket[]
+  notes          OrderNote[]
 
   @@index([userId, placedAt])
   @@index([reservationState, reservationExpiresAt])

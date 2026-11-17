@@ -18,7 +18,9 @@
     "prisma:seed": "prisma db seed",
     "prisma:seed:local": "ts-node prisma/seed-local.ts",
     "location:pincodes": "ts-node prisma/import-pincodes.ts",
-    "location:cities": "ts-node prisma/import-cities.ts"
+    "location:cities": "ts-node prisma/import-cities.ts",
+    "admin:grant": "ts-node prisma/grant-role.ts",
+    "admin:seed": "ts-node prisma/seed-admin.ts"
   },
   "prisma": {
     "schema": "prisma/schema",

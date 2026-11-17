@@ -149,6 +149,14 @@ export class CheckoutService implements OnModuleInit, OnModuleDestroy {
           };
         }) },
       } });
+      if (order.couponCode) {
+        // Count the use now; a released reservation gives it back.
+        const used = await tx.coupon.updateMany({
+          where: { code: order.couponCode, OR: [{ usageLimit: null }, { usedCount: { lt: tx.coupon.fields.usageLimit } }] },
+          data: { usedCount: { increment: 1 } },
+        });
+        if (!used.count) throw new ConflictException('This coupon has just been fully used. Review your order.');
+      }
       if (order.coinsUsed) {
         const changed = await tx.wallet.updateMany({ where: { userId, coins: { gte: order.coinsUsed } }, data: { coins: { decrement: order.coinsUsed } } });
         if (!changed.count) throw new ConflictException('Your coin balance changed. Review your order.');
@@ -183,6 +191,9 @@ export class CheckoutService implements OnModuleInit, OnModuleDestroy {
         }
       }
       await tx.subOrder.updateMany({ where: { orderId, status: 'PLACED' }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelledBy: 'SYSTEM', cancelReason: reason === 'EXPIRED' ? 'Payment window expired' : 'Payment failed' } });
+      if (order.couponCode) {
+        await tx.coupon.updateMany({ where: { code: order.couponCode, usedCount: { gt: 0 } }, data: { usedCount: { decrement: 1 } } });
+      }
       if (order.coinsUsed || order.walletUsedPaise) {
         const wallet = await tx.wallet.update({ where: { userId: order.userId }, data: { coins: { increment: order.coinsUsed }, balancePaise: { increment: order.walletUsedPaise } } });
         await tx.walletEntry.create({ data: { userId: order.userId, type: 'CREDIT', source: 'REFUND', coins: order.coinsUsed, amountPaise: order.walletUsedPaise, balanceAfterPaise: wallet.balancePaise, reference: order.id, description: 'Checkout reservation released' } });

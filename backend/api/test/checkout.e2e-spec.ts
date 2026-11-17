@@ -37,7 +37,7 @@ describe('Cart and checkout (database + HTTP)', () => {
       const vendor = await db.vendor.create({ data: { slug: `checkout-${suffix}-${i}`, displayName: `Vendor ${i}`, initials: 'VT', status: 'ACTIVE', pickupPincode: '560001' } }); vendorIds.push(vendor.id);
       const product = await db.product.create({ data: { vendorId: vendor.id, categoryId, slug: `checkout-${suffix}-${i}`, name: `Item ${i}`, pricePaise: 11800, mrpPaise: 15000, gstRateBps: 1800, imageUrl: '/test.png', stock: 10, status: 'LIVE' } }); productIds.push(product.id);
     }
-    await db.coupon.create({ data: { code, discountBps: 1000, startsAt: new Date(Date.now() - 10000), endsAt: new Date(Date.now() + 3600000) } });
+    await db.coupon.create({ data: { code, value: 1000, startsAt: new Date(Date.now() - 10000), endsAt: new Date(Date.now() + 3600000) } });
   });
   beforeEach(async () => {
     await db.order.deleteMany({ where: { userId } });

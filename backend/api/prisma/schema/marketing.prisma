@@ -74,3 +74,47 @@ model Deal {
   @@index([productId])
   @@map("deals")
 }
+
+enum CouponType {
+  /// `value` is basis points of the order value (1000 = 10%).
+  PERCENT
+  /// `value` is paise off.
+  FLAT
+  FREE_DELIVERY
+}
+
+enum CouponAudience {
+  ALL
+  NEW_USERS
+  PRIME_MEMBERS
+}
+
+/// Trustlon-funded coupon (5.7), managed in Admin › Marketing › Coupons and applied in the cart.
+/// It never reduces the vendor's invoice value. Shares the `coupons` table created by the
+/// cart/checkout migration; column names are kept so existing coupons carry over.
+model Coupon {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code             String         @unique @db.VarChar(40)
+  description      String         @default("") @db.VarChar(200)
+  type             CouponType     @default(PERCENT)
+  /// PERCENT: basis points (1000 = 10%). FLAT: paise off. FREE_DELIVERY: unused.
+  value            Int            @default(0) @map("discount_bps")
+  /// Cap on the discount for PERCENT coupons, in paise.
+  maxDiscountPaise Int?           @map("max_discount_paise")
+  minOrderPaise    Int            @default(0) @map("min_total_paise")
+  audience         CouponAudience @default(ALL)
+  /// Empty means every category.
+  categoryIds      String[]       @default([]) @map("category_ids")
+  /// Total redemptions allowed; null means no limit.
+  usageLimit       Int?           @map("usage_limit")
+  perUserLimit     Int            @default(1) @map("per_user_limit")
+  usedCount        Int            @default(0) @map("used_count")
+  startsAt         DateTime       @map("starts_at")
+  endsAt           DateTime       @map("ends_at")
+  isActive         Boolean        @default(true) @map("active")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  @@index([isActive, startsAt, endsAt])
+  @@map("coupons")
+}

@@ -77,6 +77,12 @@ model User {
   dateOfBirth       DateTime?  @map("date_of_birth") @db.Date
   gender            Gender?
   lastLoginAt       DateTime?  @map("last_login_at")
+  /// Set when staff are created with a temporary password; cleared when they choose their own.
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  /// Customer can't choose cash on delivery (5.6).
+  codDisabled       Boolean    @default(false) @map("cod_disabled")
+  /// Why staff blocked the account (5.6).
+  blockedReason     String?    @map("blocked_reason") @db.VarChar(300)
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
   deletedAt         DateTime?  @map("deleted_at")
@@ -104,6 +110,7 @@ model User {
   supportTickets         SupportTicket[]
   notificationPreference NotificationPreference?
   accountDeletion        AccountDeletion?
+  staffMfa               StaffMfa?
 
   @@map("users")
 }
@@ -137,6 +144,8 @@ model Session {
   lastUsedAt        DateTime  @default(now()) @map("last_used_at")
   revokedAt         DateTime? @map("revoked_at")
   revokedReason     String?   @map("revoked_reason") @db.VarChar(50)
+  /// When the second factor was checked. Set only for admin panel sessions.
+  mfaVerifiedAt     DateTime? @map("mfa_verified_at")
   createdAt         DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

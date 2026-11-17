@@ -22,7 +22,12 @@ export class OptionalJwtAuthGuard implements CanActivate {
       const payload = await this.jwt.verifyAsync<AccessTokenPayload>(header.slice(7), {
         audience: ACCESS_TOKEN_AUDIENCE,
       });
-      request.user = { id: payload.sub, role: payload.role, sessionId: payload.sid };
+      request.user = {
+        id: payload.sub,
+        role: payload.role,
+        sessionId: payload.sid,
+        mfa: payload.mfa === true,
+      };
       return true;
     } catch {
       throw new UnauthorizedException('Session expired');

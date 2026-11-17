@@ -3,9 +3,10 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { SubOrderStatus, WalletEntrySource } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SUB_ORDER_DELIVERED, SubOrderDeliveredEvent } from '../orders/orders.service';
+import { SiteSettingsService } from '../site/site-settings.service';
 import { WalletService } from '../wallet/wallet.service';
 
-/** Wallet money the referrer gets when a friend's first order is delivered. TO CONFIRM (Marketing). */
+/** Default reward; the live amount is set in /admin > Business settings. */
 export const REFERRAL_REWARD_PAISE = 10_000;
 
 /**
@@ -19,6 +20,7 @@ export class ReferralRewardListener {
   constructor(
     private readonly prisma: PrismaService,
     private readonly wallet: WalletService,
+    private readonly site: SiteSettingsService,
   ) {}
 
   @OnEvent(SUB_ORDER_DELIVERED, { async: true })
@@ -32,6 +34,12 @@ export class ReferralRewardListener {
 
   /** Returns true when a reward was credited. Safe to call more than once. */
   async reward(friendId: string): Promise<boolean> {
+    const [rewards, features] = await Promise.all([
+      this.site.get('rewards'),
+      this.site.get('features'),
+    ]);
+    const rewardPaise = rewards.referral.rewardRupees * 100;
+    if (!features.referralProgram || rewardPaise <= 0) return false;
     const friend = await this.prisma.user.findUnique({
       where: { id: friendId },
       select: { referredById: true, fullName: true, deletedAt: true },
@@ -55,7 +63,7 @@ export class ReferralRewardListener {
       });
       if (already > 0) return false;
       await this.wallet.credit(tx, referrerId, {
-        amountPaise: REFERRAL_REWARD_PAISE,
+        amountPaise: rewardPaise,
         source: WalletEntrySource.REFERRAL,
         description: `Referral reward: ${friend.fullName.split(' ')[0]}’s first order was delivered`,
         reference,

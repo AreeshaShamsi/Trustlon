@@ -227,7 +227,7 @@ export function ReturnRequestForm() {
           }`}
         />
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-6">
             <Panel title="1. Which items are you returning?">
               <ul className="space-y-3">
@@ -297,7 +297,7 @@ export function ReturnRequestForm() {
             <Panel title="2. Why are you returning them?">
               <fieldset>
                 <legend className="sr-only">Reason</legend>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {eligibility.reasons.map((option) => (
                     <label key={option.value} className={optionClass(reason === option.value)}>
                       <input
@@ -412,7 +412,7 @@ export function ReturnRequestForm() {
             >
               <fieldset>
                 <legend className="sr-only">Pickup address</legend>
-                <div className="grid gap-2 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   <label className={optionClass(pickup === 'order')}>
                     <input
                       type="radio"

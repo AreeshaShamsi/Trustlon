@@ -30,6 +30,18 @@ export const envSchema = z
     OTP_RESEND_SECONDS: z.coerce.number().int().nonnegative().default(30),
 
     COOKIE_SECURE: bool,
+    /**
+     * Encrypts secrets kept in the database (authenticator secrets, payment gateway keys, bank
+     * account numbers). Use 32+ random characters and never change it once data exists.
+     * Optional in development, required in production.
+     */
+    DATA_ENCRYPTION_KEY: z
+      .string()
+      .optional()
+      .transform((value) => (value ? value : undefined))
+      .refine((value) => value === undefined || value.length >= 32, 'Use at least 32 characters'),
+    /** Where staff open the admin panel; used in links from the API. */
+    ADMIN_URL: z.string().default('http://localhost:3001'),
     /** Folder for uploaded files such as return photos. Relative paths start at the API folder. */
     STORAGE_DIR: z.string().min(1).default('storage'),
     /**
@@ -48,6 +60,13 @@ export const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['OTP_PROVIDER'],
         message: 'The console OTP provider must not be used in production',
+      });
+    }
+    if (env.NODE_ENV === 'production' && !env.DATA_ENCRYPTION_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DATA_ENCRYPTION_KEY'],
+        message: 'DATA_ENCRYPTION_KEY is required in production',
       });
     }
     if (env.NODE_ENV === 'production' && !env.COOKIE_SECURE) {

@@ -1,6 +1,7 @@
-import type { Dictionary } from './en';
+import type { PartialDictionary } from './en';
 
-export const hi: Dictionary = {
+/** Hindi. Sections not here yet (e.g. the Sell page) show in English until translated in Admin › Settings › Localisation. */
+export const hi: PartialDictionary = {
   common: {
     brand: 'Trustlon',
     language: 'भाषा',

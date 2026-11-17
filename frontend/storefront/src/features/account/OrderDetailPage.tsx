@@ -134,7 +134,7 @@ function SubOrderPanel({
           ))}
         </ul>
 
-        <div className="grid gap-6 border-t border-slate-100 pt-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 border-t border-slate-100 pt-5 md:grid-cols-2">
           <div className="min-w-0 space-y-4">
             {cancellation && (
               <Alert tone="info">
@@ -387,7 +387,7 @@ export function OrderDetailPage() {
       <div className="space-y-4" aria-busy="true">
         {back}
         <Skeleton className="h-10 w-72" />
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <Skeleton className="h-96" />
           <Skeleton className="h-72" />
         </div>
@@ -410,7 +410,7 @@ export function OrderDetailPage() {
 
       <div aria-live="polite">{notice && <Alert tone="success">{notice}</Alert>}</div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-4">
           {order.subOrders.map((subOrder, index) => (
             <SubOrderPanel

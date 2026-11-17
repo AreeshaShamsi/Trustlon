@@ -25,7 +25,7 @@ const SOURCE_LABELS: Record<WalletTransaction['source'], string> = {
 function BalanceCards({ wallet }: { wallet: WalletOverview }) {
   const expiring = wallet.coinsExpiringSoon;
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div className="rounded-lg bg-navy p-5 text-white">
         <p className="text-xs uppercase tracking-wider text-white/70">Wallet balance</p>
         <p className="mt-2 text-3xl font-semibold">{formatMoney(wallet.balancePaise)}</p>
@@ -140,7 +140,7 @@ export function WalletPage() {
           description="Refresh the page to try again."
         />
       ) : !wallet ? (
-        <div className="grid gap-4 sm:grid-cols-3" aria-busy="true">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-busy="true">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -149,7 +149,7 @@ export function WalletPage() {
         <BalanceCards wallet={wallet} />
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Panel title="Transactions" className="min-w-0">
           <div
             role="group"

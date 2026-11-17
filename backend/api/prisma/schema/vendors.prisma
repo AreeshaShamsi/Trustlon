@@ -1,3 +1,32 @@
+enum KycStatus {
+  NOT_STARTED
+  SUBMITTED
+  MORE_INFO_REQUIRED
+  APPROVED
+  REJECTED
+}
+
+/// Result of an automatic check such as the PAN, GSTIN or penny-drop bank verification.
+enum CheckResult {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum VendorDocumentType {
+  PAN_CARD
+  GST_CERTIFICATE
+  CANCELLED_CHEQUE
+  ADDRESS_PROOF
+  BRAND_AUTHORISATION
+  OTHER
+}
+
+enum VendorNoteKind {
+  NOTE
+  WARNING
+}
+
 enum VendorStatus {
   PENDING
   ACTIVE
@@ -39,6 +68,16 @@ model Vendor {
   localArea       String?      @map("local_area") @db.VarChar(120)
   localCategory   String?      @map("local_category") @db.VarChar(120)
   sameDayDelivery Boolean      @default(false) @map("same_day_delivery")
+  /// Seller plan, e.g. STANDARD or PREMIUM.
+  plan             String    @default("STANDARD") @db.VarChar(20)
+  /// Overrides the category commission (5.2). Basis points: 1000 = 10%.
+  commissionBps    Int?      @map("commission_bps")
+  payoutsOnHold    Boolean   @default(false) @map("payouts_on_hold")
+  payoutHoldReason String?   @map("payout_hold_reason") @db.VarChar(300)
+  suspendedAt      DateTime? @map("suspended_at")
+  suspensionReason String?   @map("suspension_reason") @db.VarChar(500)
+  /// Opened from Trust and safety (5.8) while staff decide whether to suspend.
+  underReview      Boolean   @default(false) @map("under_review")
   ownerId         String?      @map("owner_id") @db.Uuid
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
@@ -48,6 +87,10 @@ model Vendor {
   pickup    Pincode?   @relation(fields: [pickupPincode], references: [pincode])
   products  Product[]
   subOrders SubOrder[]
+  kyc         VendorKyc?
+  documents   VendorDocument[]
+  notes       VendorNote[]
+  trustScores VendorTrustScore[]
 
   @@index([status, isFeatured])
   @@index([pickupPincode])
@@ -81,4 +124,83 @@ model VendorLead {
   @@index([status, createdAt])
   @@index([mobile])
   @@map("vendor_leads")
+}
+
+/// KYC details a vendor submits during onboarding (4.1), reviewed by Admin (5.2).
+model VendorKyc {
+  vendorId           String      @id @map("vendor_id") @db.Uuid
+  status             KycStatus   @default(NOT_STARTED)
+  pan                String?     @db.VarChar(10)
+  panName            String?     @map("pan_name") @db.VarChar(120)
+  panCheck           CheckResult @default(PENDING) @map("pan_check")
+  gstin              String?     @db.VarChar(15)
+  gstinLegalName     String?     @map("gstin_legal_name") @db.VarChar(200)
+  gstinCheck         CheckResult @default(PENDING) @map("gstin_check")
+  bankAccountLast4   String?     @map("bank_account_last4") @db.VarChar(4)
+  /// Full account number, encrypted with DATA_ENCRYPTION_KEY.
+  bankAccountEnc     String?     @map("bank_account_enc") @db.VarChar(200)
+  ifsc               String?     @db.VarChar(11)
+  bankName           String?     @map("bank_name") @db.VarChar(120)
+  /// Account holder name returned by the penny-drop test.
+  pennyDropName      String?     @map("penny_drop_name") @db.VarChar(120)
+  pennyDropCheck     CheckResult @default(PENDING) @map("penny_drop_check")
+  submittedAt        DateTime?   @map("submitted_at")
+  reviewedAt         DateTime?   @map("reviewed_at")
+  reviewedById       String?     @map("reviewed_by_id") @db.Uuid
+  rejectionReasons   String[]    @default([]) @map("rejection_reasons")
+  /// Documents asked for with "Request more documents".
+  requestedDocuments String[]    @default([]) @map("requested_documents")
+  reviewNote         String?     @map("review_note") @db.VarChar(500)
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([status, submittedAt])
+  @@map("vendor_kyc")
+}
+
+/// KYC and business documents. Files live in FileStorage under vendors/<vendorId>/.
+model VendorDocument {
+  id          String             @id @default(uuid()) @db.Uuid
+  vendorId    String             @map("vendor_id") @db.Uuid
+  type        VendorDocumentType
+  storageKey  String             @unique @map("storage_key") @db.VarChar(200)
+  contentType String             @map("content_type") @db.VarChar(40)
+  sizeBytes   Int                @map("size_bytes")
+  fileName    String?            @map("file_name") @db.VarChar(160)
+  uploadedAt  DateTime           @default(now()) @map("uploaded_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("vendor_documents")
+}
+
+/// Staff notes and warnings on a vendor (5.2, 5.8).
+model VendorNote {
+  id         String         @id @default(uuid()) @db.Uuid
+  vendorId   String         @map("vendor_id") @db.Uuid
+  kind       VendorNoteKind @default(NOTE)
+  authorId   String?        @map("author_id") @db.Uuid
+  authorName String         @map("author_name") @db.VarChar(100)
+  body       String         @db.VarChar(2000)
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("vendor_notes")
+}
+
+/// Daily Trust Score, for the history chart on the vendor page.
+model VendorTrustScore {
+  id         String   @id @default(uuid()) @db.Uuid
+  vendorId   String   @map("vendor_id") @db.Uuid
+  score      Int
+  recordedOn DateTime @map("recorded_on") @db.Date
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, recordedOn])
+  @@map("vendor_trust_scores")
 }

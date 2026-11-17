@@ -12,10 +12,11 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthUser } from '../../common/auth/auth-user';
 import { CurrentUser } from '../../common/auth/decorators';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
@@ -39,8 +40,12 @@ export class ReviewsController {
   @Post('reviews')
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
-  create(@CurrentUser() user: AuthUser, @Body() dto: CreateReviewDto) {
-    return this.reviews.create(user.id, dto);
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateReviewDto, @Req() req: Request) {
+    const agent = req.headers['user-agent'];
+    return this.reviews.create(user.id, dto, {
+      ip: req.ip,
+      userAgent: typeof agent === 'string' ? agent : undefined,
+    });
   }
 
   @Patch('reviews/:id')

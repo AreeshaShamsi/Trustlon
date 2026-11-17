@@ -51,11 +51,16 @@ function ReferralCard({ summary, origin }: { summary: AffiliateSummary; origin: 
   return (
     <Panel title="Invite friends">
       <p className="text-sm text-slate-600">
-        Share your code. Friends enter it when they sign up, and you get{' '}
-        <span className="font-semibold text-navy">
-          {formatMoney(summary.rules.referralRewardPaise)}
-        </span>{' '}
-        in your wallet when their first order is delivered.
+        Share your code. Friends enter it when they sign up
+        {summary.rules.referralRewardPaise > 0 ? ', and you get ' : '.'}
+        {summary.rules.referralRewardPaise > 0 && (
+          <>
+            <span className="font-semibold text-navy">
+              {formatMoney(summary.rules.referralRewardPaise)}
+            </span>{' '}
+            in your wallet when their first order is delivered.
+          </>
+        )}
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <span className="rounded-lg border-2 border-dashed border-teal bg-teal-50 px-4 py-2 font-mono text-lg font-semibold tracking-widest text-teal-600">
@@ -262,7 +267,7 @@ export function AffiliatePage() {
         ))}
       </dl>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ReferralCard summary={summary} origin={origin} />
         <LinkGenerator onCreated={setLinks} />
       </div>

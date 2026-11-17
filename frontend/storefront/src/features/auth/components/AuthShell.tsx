@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { BrandLogo } from '@/components/BrandLogo';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { useI18n } from '@/lib/i18n/language-provider';
+import { useSiteConfig } from '@/lib/site-config';
 
 const icons = {
   escrow: (
@@ -30,7 +31,7 @@ function BrandPanel() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(60rem 40rem at 110% -10%, rgba(60,203,180,0.22), transparent 60%), radial-gradient(40rem 30rem at -20% 110%, rgba(60,203,180,0.12), transparent 60%)',
+            'radial-gradient(60rem 40rem at 110% -10%, rgb(var(--tl-logo-accent) / 0.22), transparent 60%), radial-gradient(40rem 30rem at -20% 110%, rgb(var(--tl-logo-accent) / 0.12), transparent 60%)',
         }}
       />
       <div className="relative">
@@ -52,7 +53,7 @@ function BrandPanel() {
                   viewBox="0 0 24 24"
                   className="h-5 w-5"
                   fill="none"
-                  stroke="#3ccbb4"
+                  stroke="rgb(var(--tl-logo-accent))"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -78,9 +79,10 @@ function BrandPanel() {
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
+  const { features } = useSiteConfig().config;
 
   return (
-    <div className="grid min-h-screen bg-white lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+    <div className="grid grid-cols-1 min-h-screen bg-white lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <BrandPanel />
 
       <div className="flex min-h-screen flex-col">
@@ -98,12 +100,14 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 pb-6 text-xs text-slate-500">
           {(
             [
-              [t.footer.terms, '/browse/terms'],
-              [t.footer.privacy, '/browse/privacy'],
-              [t.footer.help, '/browse/help'],
+              [t.footer.terms, '/pages/terms'],
+              [t.footer.privacy, '/pages/privacy'],
+              [t.footer.help, '/pages/help'],
               [t.footer.sell, '/sell'],
             ] as const
-          ).map(([label, href]) => (
+          )
+            .filter(([, href]) => href !== '/sell' || features.sellPage)
+            .map(([label, href]) => (
             <Link key={href} href={href} className="hover:text-navy">
               {label}
             </Link>

@@ -8,6 +8,7 @@ import { seedHomepage } from '../prisma/seed';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { adminToken } from './admin-session';
 
 const PASSWORD = 'Trustlon123';
 
@@ -277,14 +278,16 @@ describe('Storefront home APIs (e2e)', () => {
   });
 
   describe('marketing admin', () => {
-    it('is closed to customers', async () => {
+    it('is closed to customers and to sessions without two-factor sign-in', async () => {
       const token = await login();
-      await http().get('/api/v1/admin/marketing/banners').set('Authorization', `Bearer ${token}`).expect(403);
+      await http().get('/api/v1/admin/marketing/banners').set('Authorization', `Bearer ${token}`).expect(401);
+      const customerAdmin = await adminToken(app, 'shopper@example.com');
+      await http().get('/api/v1/admin/marketing/banners').set('Authorization', `Bearer ${customerAdmin}`).expect(403);
     });
 
     it('lets Marketing add a banner that appears on the home page at once', async () => {
       await prisma.user.update({ where: { email: 'shopper@example.com' }, data: { role: UserRole.MARKETING } });
-      const token = await login();
+      const token = await adminToken(app, 'shopper@example.com');
       await http().get('/api/v1/home').expect(200);
 
       await http()
@@ -298,7 +301,7 @@ describe('Storefront home APIs (e2e)', () => {
     });
 
     it('validates deal prices and windows', async () => {
-      const token = await login();
+      const token = await adminToken(app, 'shopper@example.com');
       const id = productId.get('trustlon-home-accent-chair');
       const startsAt = new Date().toISOString();
       const endsAt = new Date(Date.now() + 3600_000).toISOString();

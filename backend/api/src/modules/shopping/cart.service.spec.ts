@@ -62,6 +62,12 @@ describe('CartService', () => {
       coupon: {
         findUnique: jest.fn(),
       },
+      order: {
+        count: jest.fn().mockResolvedValue(0),
+      },
+      primeMembership: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
       wallet: {
         findUnique: jest.fn(),
       },
@@ -291,12 +297,18 @@ describe('CartService', () => {
   describe('4. Coupon apply and remove', () => {
     const validCoupon = {
       code: 'TRUSTLON20',
-      discountBps: 2000, // 20%
-      minTotalPaise: 50000, // min ₹500
+      type: 'PERCENT',
+      audience: 'ALL',
+      categoryIds: [],
+      usageLimit: null,
+      perUserLimit: 1,
+      usedCount: 0,
+      value: 2000, // 20%
+      minOrderPaise: 50000, // min ₹500
       maxDiscountPaise: 50000, // max ₹500 discount
       startsAt: new Date('2026-01-01T00:00:00Z'),
       endsAt: new Date('2026-12-31T23:59:59Z'),
-      active: true,
+      isActive: true,
     };
 
     it('applies a valid coupon within spend threshold and applies discount', async () => {
@@ -341,7 +353,7 @@ describe('CartService', () => {
       prisma.cart.findFirst.mockResolvedValue(cart);
       prisma.coupon.findUnique.mockResolvedValue({
         ...validCoupon,
-        active: false,
+        isActive: false,
       });
 
       await expect(service.coupon(userShopper, 'TRUSTLON20')).rejects.toThrow(
@@ -359,7 +371,7 @@ describe('CartService', () => {
       prisma.cart.findFirst.mockResolvedValue(cart);
       prisma.coupon.findUnique.mockResolvedValue({
         ...validCoupon,
-        minTotalPaise: 500000, // requires ₹5,000; cart subtotal is only ₹1,000
+        minOrderPaise: 500000, // requires ₹5,000; cart subtotal is only ₹1,000
       });
 
       await expect(service.coupon(userShopper, 'TRUSTLON20')).rejects.toThrow(
@@ -502,12 +514,18 @@ describe('CartService', () => {
 
       prisma.coupon.findUnique.mockResolvedValue({
         code: 'SAVE10',
-        discountBps: 1000, // 10%
-        minTotalPaise: 100000,
+        type: 'PERCENT',
+        audience: 'ALL',
+        categoryIds: [],
+        usageLimit: null,
+        perUserLimit: 1,
+        usedCount: 0,
+        value: 1000, // 10%
+        minOrderPaise: 100000,
         maxDiscountPaise: null,
         startsAt: new Date('2026-01-01T00:00:00Z'),
         endsAt: new Date('2026-12-31T23:59:59Z'),
-        active: true,
+        isActive: true,
       });
 
       prisma.wallet.findUnique.mockResolvedValue({ coins: 300 });

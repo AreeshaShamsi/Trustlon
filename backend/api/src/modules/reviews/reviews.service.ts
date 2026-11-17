@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, ReviewMediaKind, ReviewStatus, SubOrderStatus } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { detectFileType, FileStorage } from '../../common/storage/file-storage';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateReviewDto, MAX_REVIEW_PHOTOS, MAX_REVIEW_VIDEOS, UpdateReviewDto } from './dto';
@@ -133,7 +133,12 @@ export class ReviewsService {
     };
   }
 
-  async create(userId: string, dto: CreateReviewDto): Promise<MyReview> {
+  /** `meta` (IP and browser) feeds the same-device fraud signal in Trust and safety (5.8). */
+  async create(
+    userId: string,
+    dto: CreateReviewDto,
+    meta: { ip?: string; userAgent?: string } = {},
+  ): Promise<MyReview> {
     const item = await this.prisma.orderItem.findFirst({
       where: { id: dto.orderItemId, subOrder: { order: { userId } } },
       include: { subOrder: { select: { status: true } }, review: { select: { id: true } } },
@@ -170,6 +175,8 @@ export class ReviewsService {
           moderationFlags: flags,
           publishedAt: status === ReviewStatus.PUBLISHED ? now : null,
           countedRating: status === ReviewStatus.PUBLISHED ? dto.rating : null,
+          ip: meta.ip?.slice(0, 45) ?? null,
+          deviceHash: deviceHash(meta),
         },
         select: { id: true },
       });
@@ -393,4 +400,17 @@ export class ReviewsService {
       },
     });
   }
+}
+
+/** Same browser on the same network range, without storing the user agent itself. */
+function deviceHash(meta: { ip?: string; userAgent?: string }): string | null {
+  if (!meta.ip && !meta.userAgent) return null;
+  const ip = meta.ip ?? '';
+  // IPv4: first three parts; IPv6: first four groups.
+  const range = ip.includes(':')
+    ? ip.split(':').slice(0, 4).join(':')
+    : ip.split('.').slice(0, 3).join('.');
+  return createHash('sha256')
+    .update(`${range}|${meta.userAgent ?? ''}`)
+    .digest('hex');
 }

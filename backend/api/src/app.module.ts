@@ -3,10 +3,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AdminCommonModule } from './common/admin/admin-common.module';
 import { AuthCommonModule } from './common/auth/auth-common.module';
+import { SecurityModule } from './common/security/security.module';
 import { FileStorageModule } from './common/storage/file-storage';
 import { Env, validateEnv } from './config/env';
 import { AccountModule } from './modules/account/account.module';
+import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { AffiliateModule } from './modules/affiliate/affiliate.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -20,6 +24,7 @@ import { PriceAlertsModule } from './modules/price-alerts/price-alerts.module';
 import { ReturnsModule } from './modules/returns/returns.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SellModule } from './modules/sell/sell.module';
+import { SiteModule } from './modules/site/site.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { ShoppingModule } from './modules/shopping/shopping.module';
 import { StoresModule } from './modules/stores/stores.module';
@@ -42,9 +47,12 @@ import { CheckoutModule } from './modules/checkout/checkout.module';
     EventEmitterModule.forRoot(),
     PrismaModule,
     AuthCommonModule,
+    SecurityModule,
+    AdminCommonModule,
     FileStorageModule,
 
     // Feature modules: add one line per module.
+    SiteModule,
     AuthModule,
     LocationModule,
     CatalogModule,
@@ -65,6 +73,8 @@ import { CheckoutModule } from './modules/checkout/checkout.module';
     SupportModule,
     SettingsModule,
     SellModule,
+    AdminAuthModule,
+    AdminModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, WalletEntrySource, WalletEntryType } from '@prisma/client';
 import { Page, toPage } from '../../common/http/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SiteSettingsService } from '../site/site-settings.service';
 
 /**
- * Trustlon Coins rules shown to customers. Keep in one place so Finance can change them
- * (and later move them to Platform settings, 5.9) without touching the pages.
+ * Default Trustlon Coins rules. Finance changes the live values in /admin > Business settings
+ * (Platform settings, 5.9); these apply until then.
  */
 export const COIN_RULES = {
   /** Value of one coin at checkout, in paise. */
@@ -29,7 +30,12 @@ export interface WalletBalance {
 export interface WalletOverview extends WalletBalance {
   coinsExpiringSoon: { coins: number; withinDays: number; nextExpiry: Date | null };
   totals: { creditedPaise: number; spentPaise: number };
-  rules: typeof COIN_RULES;
+  rules: {
+    coinValuePaise: number;
+    maxRedeemPercent: number;
+    earnPerHundredRupees: number;
+    expiryMonths: number;
+  };
 }
 
 export interface WalletCredit {
@@ -65,15 +71,18 @@ export interface WalletTransaction {
   createdAt: Date;
 }
 
-export function coinExpiryFrom(date: Date): Date {
+export function coinExpiryFrom(date: Date, expiryMonths: number = COIN_RULES.expiryMonths): Date {
   const expiry = new Date(date);
-  expiry.setMonth(expiry.getMonth() + COIN_RULES.expiryMonths);
+  expiry.setMonth(expiry.getMonth() + expiryMonths);
   return expiry;
 }
 
 @Injectable()
 export class WalletService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly site: SiteSettingsService,
+  ) {}
 
   async balance(userId: string): Promise<WalletBalance> {
     const wallet = await this.prisma.wallet.findUnique({
@@ -119,7 +128,7 @@ export class WalletService {
         creditedPaise: credited._sum.amountPaise ?? 0,
         spentPaise: spent._sum.amountPaise ?? 0,
       },
-      rules: COIN_RULES,
+      rules: (await this.site.get('rewards')).coins,
     };
   }
 
@@ -177,7 +186,11 @@ export class WalletService {
         balanceAfterPaise: wallet.balancePaise,
         description: credit.description,
         reference: credit.reference,
-        coinsExpireAt: coins > 0 ? (credit.coinsExpireAt ?? coinExpiryFrom(new Date())) : null,
+        coinsExpireAt:
+          coins > 0
+            ? (credit.coinsExpireAt ??
+              coinExpiryFrom(new Date(), (await this.site.get('rewards')).coins.expiryMonths))
+            : null,
       },
     });
   }

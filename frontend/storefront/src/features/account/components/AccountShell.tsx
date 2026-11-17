@@ -11,6 +11,7 @@ import { MarketplaceDialogs } from '@/features/home/components/MarketplaceDialog
 import { useHome } from '@/features/home/home-provider';
 import type { Dictionary } from '@/lib/i18n/en';
 import { useI18n } from '@/lib/i18n/language-provider';
+import { useSiteConfig } from '@/lib/site-config';
 import { Skeleton } from './ui';
 
 type NavKey = Exclude<keyof Dictionary['accountNav'], 'label' | 'signOut'>;
@@ -40,6 +41,8 @@ function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
   const pathname = usePathname();
   const home = useHome();
   const { t } = useI18n();
+  const { features } = useSiteConfig().config;
+  const nav = NAV.filter((item) => item.key !== 'refer' || features.referralProgram);
 
   const isActive = (href: string) =>
     href === '/account'
@@ -49,7 +52,7 @@ function AccountSidebar({ onSignOut }: { onSignOut: () => void }) {
   return (
     <nav aria-label={t.accountNav.label} className="min-w-0 lg:sticky lg:top-6 lg:self-start">
       <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2 lg:mx-0 lg:block lg:space-y-0.5 lg:overflow-visible lg:rounded-lg lg:border lg:border-slate-200 lg:bg-white lg:p-2">
-        {NAV.map((item) => (
+        {nav.map((item) => (
           <li key={item.key}>
             <Link
               href={item.href}

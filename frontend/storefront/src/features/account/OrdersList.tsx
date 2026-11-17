@@ -88,7 +88,7 @@ function OrderFilters({
           );
         })}
       </div>
-      <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-[minmax(0,1fr)_170px_170px_auto] md:items-end">
+      <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-[minmax(0,1fr)_170px_170px_auto] md:items-end">
         <div>
           <label htmlFor={searchId} className="mb-1.5 block text-sm font-medium text-navy">
             Search by product

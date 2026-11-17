@@ -18,6 +18,7 @@ import { OtpInput } from '@/features/auth/components/OtpInput';
 import { PasswordRequirements } from '@/features/auth/components/PasswordRequirements';
 import { meetsPasswordRules } from '@/features/auth/schemas';
 import { ApiError } from '@/lib/http';
+import { useSiteConfig } from '@/lib/site-config';
 import {
   fromApiLanguage,
   toApiLanguage,
@@ -186,7 +187,7 @@ function ProfileForm({
         error={errors.fullName}
         onChange={(e) => setFullName(e.target.value)}
       />
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <TextField
           label="Date of birth"
           type="date"
@@ -904,14 +905,6 @@ function LanguageSelector({
 
 /* Privacy */
 
-const DELETE_REASONS = [
-  'I have another account',
-  'I don’t shop here any more',
-  'Privacy concerns',
-  'Too many messages',
-  'Something else',
-];
-
 function DeleteAccountDialog({
   overview,
   onClose,
@@ -929,6 +922,8 @@ function DeleteAccountDialog({
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const blocked = deletion.blockers.length > 0;
+  // Reasons are edited in Admin › Settings › Features.
+  const deleteReasons = useSiteConfig().config.account.deleteReasons;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -995,7 +990,7 @@ function DeleteAccountDialog({
             placeholder="Choose a reason"
             value={reason}
             onChange={setReason}
-            options={DELETE_REASONS.map((option) => ({ value: option, label: option }))}
+            options={deleteReasons.map((option) => ({ value: option, label: option }))}
           />
           {profile.hasPassword && (
             <PasswordField
@@ -1165,7 +1160,7 @@ export function SettingsPage() {
           </div>
           <div id="security" className="scroll-mt-6">
             <Panel title="Security">
-              <div className="grid gap-8 xl:grid-cols-2">
+              <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
                 <div>
                   <h3 className="mb-4 text-sm font-semibold text-navy">
                     {overview.profile.hasPassword ? 'Change password' : 'Set a password'}

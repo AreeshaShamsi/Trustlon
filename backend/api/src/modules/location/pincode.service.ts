@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Pincode, Prisma } from '@prisma/client';
 import { Env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SiteSettingsService } from '../site/site-settings.service';
 import { INDIAN_STATES } from './address-rules';
 
 export interface Serviceability {
@@ -76,6 +77,7 @@ export class PincodeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService<Env, true>,
+    private readonly site: SiteSettingsService,
   ) {}
 
   /**
@@ -136,6 +138,7 @@ export class PincodeService {
   private async lookupIndiaPost(pincode: string): Promise<PincodeSuggestion | null> {
     const base = this.config.get('PINCODE_LOOKUP_URL', { infer: true });
     if (!base || this.config.get('NODE_ENV', { infer: true }) === 'test') return null;
+    if (!(await this.site.get('features')).pincodeLookup) return null;
     try {
       const response = await fetch(`${base.replace(/\/$/, '')}/${pincode}`, {
         signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),

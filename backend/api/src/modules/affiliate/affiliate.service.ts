@@ -4,9 +4,9 @@ import { randomInt } from 'crypto';
 import { Page, toPage } from '../../common/http/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
 import { liveProductWhere } from '../catalog/catalog.queries';
-import { REFERRAL_REWARD_PAISE } from './referral.listener';
+import { SiteSettingsService } from '../site/site-settings.service';
 
-/** Commission on affiliate sales, in basis points (500 = 5%). Finance can change this later (5.9). */
+/** Default commission on affiliate sales (500 = 5%); the live value is in /admin > Business settings. */
 export const AFFILIATE_COMMISSION_BPS = 500;
 /** How long a click is remembered in the shopper's browser for attribution. */
 export const ATTRIBUTION_DAYS = 30;
@@ -56,10 +56,17 @@ const linkPath = (code: string) => `/r/${code}`;
 
 @Injectable()
 export class AffiliateService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly site: SiteSettingsService,
+  ) {}
 
   async summary(userId: string): Promise<AffiliateSummary> {
     await this.confirmDue(userId);
+    const [rules, features] = await Promise.all([
+      this.site.get('rewards'),
+      this.site.get('features'),
+    ]);
     const [user, friendsJoined, rewards, links, earnings] = await Promise.all([
       this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { referralCode: true } }),
       this.prisma.user.count({ where: { referredById: userId, deletedAt: null } }),
@@ -99,9 +106,9 @@ export class AffiliateService {
         paidPaise: sum(AffiliateEarningStatus.PAID),
       },
       rules: {
-        commissionPercent: AFFILIATE_COMMISSION_BPS / 100,
-        attributionDays: ATTRIBUTION_DAYS,
-        referralRewardPaise: REFERRAL_REWARD_PAISE,
+        commissionPercent: rules.affiliate.commissionPercent,
+        attributionDays: rules.affiliate.attributionDays,
+        referralRewardPaise: features.referralProgram ? rules.referral.rewardRupees * 100 : 0,
       },
     };
   }

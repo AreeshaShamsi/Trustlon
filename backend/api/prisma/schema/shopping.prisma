@@ -32,16 +32,7 @@ model CartItem {
   @@map("cart_items")
 }
 
-model Coupon {
-  code String @id @db.VarChar(40)
-  discountBps Int @map("discount_bps")
-  minTotalPaise Int @default(0) @map("min_total_paise")
-  maxDiscountPaise Int? @map("max_discount_paise")
-  startsAt DateTime @map("starts_at")
-  endsAt DateTime @map("ends_at")
-  active Boolean @default(true)
-  @@map("coupons")
-}
+// Coupons live in marketing.prisma (Admin › Marketing › Coupons).
 
 model WishlistItem {
   userId    String   @map("user_id") @db.Uuid

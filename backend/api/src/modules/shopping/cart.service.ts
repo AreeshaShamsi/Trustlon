@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MAX_QUANTITY_PER_ITEM } from '../catalog/product.presenter';
 import { COIN_RULES } from '../wallet/wallet.service';
 import { CartChanges, CartGroupView, CartItemView, CartView, StockStatus } from './cart.types';
+import { checkCoupon } from './coupon-rules';
 export type { CartView } from './cart.types';
 
 export const cartInclude = {
@@ -144,36 +145,6 @@ export class CartService {
       hasUnavailableItems = hasUnavailableItems || !available;
     }
 
-    const coupon = cart?.couponCode
-      ? await db.coupon.findUnique({ where: { code: cart.couponCode } })
-      : null;
-
-    let couponValid = false;
-    let couponMessage = '';
-    if (cart?.couponCode) {
-      if (!coupon) {
-        couponMessage = 'Invalid coupon code.';
-      } else if (!coupon.active || coupon.startsAt > now || coupon.endsAt <= now) {
-        couponMessage = 'This coupon is expired.';
-      } else if (subtotal < coupon.minTotalPaise) {
-        couponMessage = `Minimum order value of ₹${coupon.minTotalPaise / 100} required.`;
-      } else if (subtotal === 0) {
-        couponMessage = 'Cart is empty.';
-      } else {
-        couponValid = true;
-        couponMessage = 'Coupon applied successfully.';
-      }
-    }
-
-    const couponDiscount =
-      couponValid && coupon
-        ? Math.min(
-            subtotal,
-            Math.floor((subtotal * coupon.discountBps) / 10000),
-            coupon.maxDiscountPaise ?? Infinity,
-          )
-        : 0;
-
     const deliveryFee = subtotal > 0
       ? [...groups.keys()].reduce(
           (sum, id) =>
@@ -183,6 +154,26 @@ export class CartService {
           0,
         )
       : 0;
+
+    const coupon = cart?.couponCode
+      ? await db.coupon.findUnique({ where: { code: cart.couponCode } })
+      : null;
+    const couponCheck = cart?.couponCode
+      ? await checkCoupon({
+          coupon,
+          shopper,
+          lines: (cart.items ?? [])
+            .filter((i) => !i.savedForLater)
+            .map((i) => ({ categoryId: i.product.categoryId, totalPaise: currentPrice(i.product, now) * i.quantity })),
+          subtotalPaise: subtotal,
+          deliveryFeePaise: deliveryFee,
+          now,
+          db,
+        })
+      : null;
+    const couponValid = Boolean(couponCheck?.valid);
+    const couponMessage = couponCheck?.message ?? '';
+    const couponDiscount = couponCheck?.valid ? couponCheck.discountPaise : 0;
 
     const wallet =
       shopper.kind === 'user'

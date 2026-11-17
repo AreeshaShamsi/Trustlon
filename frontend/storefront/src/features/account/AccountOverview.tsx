@@ -45,7 +45,7 @@ function ProfileSummary({ summary }: { summary: AccountSummary }) {
               </span>
             )}
           </div>
-          <dl className="mt-2 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
+          <dl className="mt-2 grid grid-cols-1 gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
             <div className="flex flex-wrap items-center gap-2">
               <dt className="sr-only">Mobile</dt>
               <dd className="text-navy">{formatInternational(profile.mobile)}</dd>
@@ -142,7 +142,7 @@ const QUICK_LINKS: Array<{ label: string; description: string; href: string; ico
 function QuickLinks() {
   return (
     <Panel title="Quick links">
-      <ul className="grid gap-3 sm:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {QUICK_LINKS.map((link) => (
           <li key={link.label}>
             <Link
@@ -242,7 +242,7 @@ export function AccountOverview() {
       ) : !summary ? (
         <div className="space-y-6" aria-busy="true">
           <Skeleton className="h-32" />
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <Skeleton className="h-80" />
             <Skeleton className="h-48" />
           </div>
@@ -250,7 +250,7 @@ export function AccountOverview() {
       ) : (
         <>
           <ProfileSummary summary={summary} />
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="min-w-0 space-y-6">
               <RecentOrders summary={summary} />
             </div>

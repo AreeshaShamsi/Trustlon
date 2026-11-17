@@ -250,7 +250,7 @@ export function ReviewsPage() {
                 You have reviewed everything you received. Thank you!
               </p>
             ) : (
-              <ul className="grid gap-3 md:grid-cols-2">
+              <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {pending.map((item) => (
                   <li
                     key={item.orderItemId}

@@ -25,6 +25,10 @@ model Review {
   /// Rating already counted in the product's average, so edits can adjust it exactly.
   countedRating   Int?         @map("counted_rating")
   publishedAt     DateTime?    @map("published_at")
+  /// Where the review was written from, for fraud signals in Trust and safety (5.8).
+  ip              String?      @db.VarChar(45)
+  /// SHA-256 of the browser user agent and IP range.
+  deviceHash      String?      @map("device_hash") @db.VarChar(64)
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 

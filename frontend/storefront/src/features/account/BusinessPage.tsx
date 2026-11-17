@@ -217,7 +217,7 @@ export function BusinessPage() {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Panel title="Business details">
           <form onSubmit={submit} noValidate className="space-y-4">
             <TextField
@@ -227,7 +227,7 @@ export function BusinessPage() {
               onChange={(e) => set('businessName', e.target.value)}
               error={errors.businessName}
             />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <TextField
                 label="GSTIN"
                 maxLength={15}
@@ -272,7 +272,7 @@ export function BusinessPage() {
               value={values.billingLine2 ?? ''}
               onChange={(e) => set('billingLine2', e.target.value)}
             />
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <PincodeField
                 value={values.billingPincode}
                 error={errors.billingPincode}

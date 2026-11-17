@@ -24,6 +24,7 @@ import {
 } from '../../common/utils/identifier';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BCRYPT_ROUNDS, MESSAGES } from '../auth/auth.constants';
+import { SiteSettingsService } from '../site/site-settings.service';
 import { OtpService } from '../auth/services/otp.service';
 import { RequestMeta } from '../auth/services/session.service';
 import {
@@ -45,7 +46,7 @@ import { describeUserAgent } from './user-agent';
 /** Emitted after a customer deletes their account; search, CRM and analytics drop the user. */
 export const ACCOUNT_DELETED = 'account.deleted';
 
-/** Orders, invoices and payments are kept this long after deletion (Income Tax and GST law). */
+/** Default years orders, invoices and payments are kept after deletion; live value in /admin. */
 export const RECORD_RETENTION_YEARS = 8;
 
 const MIN_AGE = 13;
@@ -128,6 +129,7 @@ export class SettingsService {
     private readonly prisma: PrismaService,
     private readonly otp: OtpService,
     private readonly events: EventEmitter2,
+    private readonly site: SiteSettingsService,
   ) {}
 
   /** Everything the settings page shows, in one call. */
@@ -370,7 +372,9 @@ export class SettingsService {
 
     const now = new Date();
     const retainUntil = new Date(now);
-    retainUntil.setUTCFullYear(retainUntil.getUTCFullYear() + RECORD_RETENTION_YEARS);
+    retainUntil.setUTCFullYear(
+      retainUntil.getUTCFullYear() + (await this.site.get('business-rules')).recordRetentionYears,
+    );
     const compactId = userId.replace(/-/g, '');
 
     await this.prisma.$transaction([
@@ -439,7 +443,7 @@ export class SettingsService {
       blockers,
       walletBalancePaise: wallet?.balancePaise ?? 0,
       coins: wallet?.coins ?? 0,
-      retentionYears: RECORD_RETENTION_YEARS,
+      retentionYears: (await this.site.get('business-rules')).recordRetentionYears,
     };
   }
 

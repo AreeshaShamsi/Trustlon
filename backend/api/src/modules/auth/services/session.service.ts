@@ -45,7 +45,12 @@ export class SessionService {
     return this.config.get('ACCESS_TOKEN_TTL_SECONDS', { infer: true });
   }
 
-  async create(user: User, meta: RequestMeta): Promise<IssuedSession> {
+  /** `mfa` marks an admin panel session whose second factor was checked. */
+  async create(
+    user: User,
+    meta: RequestMeta,
+    options: { mfa?: boolean } = {},
+  ): Promise<IssuedSession> {
     const secret = randomBytes(32).toString('base64url');
     const expiresAt = new Date(
       Date.now() + this.config.get('REFRESH_TOKEN_TTL_DAYS', { infer: true }) * 86_400_000,
@@ -57,11 +62,12 @@ export class SessionService {
         expiresAt,
         ip: meta.ip?.slice(0, 45),
         userAgent: meta.userAgent?.slice(0, 512),
+        mfaVerifiedAt: options.mfa ? new Date() : null,
       },
     });
 
     return {
-      accessToken: await this.signAccessToken(user, session.id),
+      accessToken: await this.signAccessToken(user, session.id, Boolean(session.mfaVerifiedAt)),
       accessTokenExpiresIn: this.accessTtl,
       refreshToken: `${session.id}.${secret}`,
       refreshTokenExpiresAt: expiresAt,
@@ -70,7 +76,14 @@ export class SessionService {
   }
 
   /** Validates a refresh token and rotates it. Reuse of an old token revokes the session. */
-  async rotate(rawToken: string | undefined): Promise<IssuedSession> {
+  /**
+   * `panel: 'admin'` accepts only sessions that passed two-factor authentication, and the
+   * storefront refresh accepts only sessions that did not, so the two cookies never mix.
+   */
+  async rotate(
+    rawToken: string | undefined,
+    panel: 'storefront' | 'admin' = 'storefront',
+  ): Promise<IssuedSession> {
     const parsed = parseRefreshToken(rawToken);
     if (!parsed) throw new UnauthorizedException(MESSAGES.SESSION_EXPIRED);
 
@@ -80,6 +93,9 @@ export class SessionService {
       include: { user: true },
     });
     if (!session || session.revokedAt || session.expiresAt <= now) {
+      throw new UnauthorizedException(MESSAGES.SESSION_EXPIRED);
+    }
+    if ((panel === 'admin') !== Boolean(session.mfaVerifiedAt)) {
       throw new UnauthorizedException(MESSAGES.SESSION_EXPIRED);
     }
     if (session.user.status !== UserStatus.ACTIVE || session.user.deletedAt) {
@@ -97,7 +113,11 @@ export class SessionService {
 
       if (withinGrace) {
         return {
-          accessToken: await this.signAccessToken(session.user, session.id),
+          accessToken: await this.signAccessToken(
+            session.user,
+            session.id,
+            Boolean(session.mfaVerifiedAt),
+          ),
           accessTokenExpiresIn: this.accessTtl,
           user: session.user,
         };
@@ -119,14 +139,22 @@ export class SessionService {
     });
     if (rotated.count === 0) {
       return {
-        accessToken: await this.signAccessToken(session.user, session.id),
+        accessToken: await this.signAccessToken(
+          session.user,
+          session.id,
+          Boolean(session.mfaVerifiedAt),
+        ),
         accessTokenExpiresIn: this.accessTtl,
         user: session.user,
       };
     }
 
     return {
-      accessToken: await this.signAccessToken(session.user, session.id),
+      accessToken: await this.signAccessToken(
+        session.user,
+        session.id,
+        Boolean(session.mfaVerifiedAt),
+      ),
       accessTokenExpiresIn: this.accessTtl,
       refreshToken: `${session.id}.${secret}`,
       refreshTokenExpiresAt: session.expiresAt,
@@ -181,8 +209,9 @@ export class SessionService {
     }
   }
 
-  private signAccessToken(user: User, sessionId: string): Promise<string> {
+  private signAccessToken(user: User, sessionId: string, mfa = false): Promise<string> {
     const payload: AccessTokenPayload = { sub: user.id, role: user.role, sid: sessionId };
+    if (mfa) payload.mfa = true;
     return this.jwt.signAsync(payload, {
       audience: ACCESS_TOKEN_AUDIENCE,
       expiresIn: this.accessTtl,

@@ -10,6 +10,7 @@ import {
 import { Alert, Button, cn, Dialog, MobileField, TextField } from '@/design-system';
 import { homeApi } from '@/features/home/api';
 import { ApiError } from '@/lib/http';
+import { useSiteConfig } from '@/lib/site-config';
 import { postalCodeValid, type CountryInfo } from '@/lib/location';
 import { isCountryCode, splitE164, type CountryCode } from '@/lib/phone';
 import { isValidName, PINCODE_PATTERN, toMobileE164 } from '@/lib/validation';
@@ -96,6 +97,8 @@ export function AddressForm({
   onSaved: (items: Address[]) => void;
 }) {
   const countries = useCountries();
+  // Admin › Settings › Features can turn off addresses outside India.
+  const internationalAllowed = useSiteConfig().config.features.internationalAddresses;
   const [values, setValues] = useState<AddressInput>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -217,7 +220,7 @@ export function AddressForm({
             error={errors.labelName}
           />
         )}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextField
             label="Full name"
             autoComplete="name"
@@ -241,23 +244,25 @@ export function AddressForm({
             }
           />
         </div>
-        <CountrySelect
-          countries={countries}
-          value={values.country}
-          error={errors.country}
-          onChange={(code) => {
-            setValues((current) => ({
-              ...current,
-              country: code,
-              state: '',
-              pincode: '',
-              city: current.country === code ? current.city : '',
-              mobile: '',
-            }));
-            if (isCountryCode(code)) setPhoneCountry(code);
-            setErrors({});
-          }}
-        />
+        {(internationalAllowed || values.country !== 'IN') && (
+          <CountrySelect
+            countries={countries}
+            value={values.country}
+            error={errors.country}
+            onChange={(code) => {
+              setValues((current) => ({
+                ...current,
+                country: code,
+                state: '',
+                pincode: '',
+                city: current.country === code ? current.city : '',
+                mobile: '',
+              }));
+              if (isCountryCode(code)) setPhoneCountry(code);
+              setErrors({});
+            }}
+          />
+        )}
         <TextField
           label="House number, building and street"
           autoComplete="address-line1"
@@ -280,7 +285,7 @@ export function AddressForm({
           value={values.landmark ?? ''}
           onChange={(e) => set('landmark', e.target.value)}
         />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {india ? (
             <PincodeField
               value={values.pincode}

@@ -1,9 +1,8 @@
 /**
  * Seller fees shown on the /sell page (spec 3.12) and used by vendor payouts (7.2).
  *
- * TO CONFIRM WITH FINANCE before launch: the default commission and the payment collection fee
- * are business decisions. TCS (CGST Act s.52) and TDS (Income-tax Act s.194-O) are the rates in
- * force when this was written; update them here if the law changes. All amounts are in paise.
+ * The rates below are only defaults: Finance changes the live values in /admin > Business
+ * settings (site_settings table), and the service passes them in. All amounts are in paise.
  */
 
 /** Used when neither the category nor its parent sets `commissionBps`. 1000 = 10%. */
@@ -43,20 +42,37 @@ export interface FeeBreakdown {
 
 const share = (amount: number, bps: number) => Math.round((amount * bps) / 10_000);
 
-export function calculateFees(input: {
-  pricePaise: number;
-  commissionBps: number;
-  gstRateBps: number;
-  shippingPaise?: number;
-}): FeeBreakdown {
+export interface FeeRates {
+  paymentFeeBps: number;
+  gstOnFeesBps: number;
+  tcsBps: number;
+  tdsBps: number;
+}
+
+export const DEFAULT_FEE_RATES: FeeRates = {
+  paymentFeeBps: PAYMENT_FEE_BPS,
+  gstOnFeesBps: GST_ON_FEES_BPS,
+  tcsBps: TCS_BPS,
+  tdsBps: TDS_BPS,
+};
+
+export function calculateFees(
+  input: {
+    pricePaise: number;
+    commissionBps: number;
+    gstRateBps: number;
+    shippingPaise?: number;
+  },
+  rates: FeeRates = DEFAULT_FEE_RATES,
+): FeeBreakdown {
   const { pricePaise, commissionBps, gstRateBps } = input;
   const shippingPaise = input.shippingPaise ?? 0;
   const taxable = Math.round((pricePaise * 10_000) / (10_000 + gstRateBps));
   const commissionPaise = share(pricePaise, commissionBps);
-  const paymentFeePaise = share(pricePaise, PAYMENT_FEE_BPS);
-  const gstOnFeesPaise = share(commissionPaise + paymentFeePaise, GST_ON_FEES_BPS);
-  const tcsPaise = share(taxable, TCS_BPS);
-  const tdsPaise = share(pricePaise, TDS_BPS);
+  const paymentFeePaise = share(pricePaise, rates.paymentFeeBps);
+  const gstOnFeesPaise = share(commissionPaise + paymentFeePaise, rates.gstOnFeesBps);
+  const tcsPaise = share(taxable, rates.tcsBps);
+  const tdsPaise = share(pricePaise, rates.tdsBps);
   const totalDeductionsPaise =
     commissionPaise + paymentFeePaise + gstOnFeesPaise + tcsPaise + tdsPaise + shippingPaise;
   const netPayoutPaise = pricePaise - totalDeductionsPaise;

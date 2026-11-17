@@ -270,11 +270,11 @@ export function SignupForm() {
             label={
               <>
                 {t.signup.termsPrefix}{' '}
-                <Link href="/browse/terms" target="_blank" className="font-medium text-navy underline underline-offset-2">
+                <Link href="/pages/terms" target="_blank" className="font-medium text-navy underline underline-offset-2">
                   {t.signup.terms}
                 </Link>{' '}
                 {t.signup.and}{' '}
-                <Link href="/browse/privacy" target="_blank" className="font-medium text-navy underline underline-offset-2">
+                <Link href="/pages/privacy" target="_blank" className="font-medium text-navy underline underline-offset-2">
                   {t.signup.privacy}
                 </Link>
               </>

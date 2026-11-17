@@ -176,7 +176,7 @@ export function AddressBook() {
           }
         />
       ) : !items ? (
-        <div className="grid gap-4 md:grid-cols-2" aria-busy="true">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-busy="true">
           <Skeleton className="h-60" />
           <Skeleton className="h-60" />
         </div>
@@ -194,7 +194,7 @@ export function AddressBook() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {items.map((address) => (
             <AddressCard
               key={address.id}

@@ -11,6 +11,7 @@ import { Icon } from '@/features/home/components/Icon';
 import { MarketplaceDialogs } from '@/features/home/components/MarketplaceDialogs';
 import { ApiError } from '@/lib/http';
 import { useI18n } from '@/lib/i18n/language-provider';
+import { useSiteConfig } from '@/lib/site-config';
 import {
   GSTIN_SHAPE,
   isValidEmail,
@@ -50,14 +51,14 @@ function StartSellingLink({
 
 /* Hero */
 
-const ESCROW_STEPS = [
-  ['Customer pays', 'Online or cash on delivery'],
-  ['Trustlon holds the money', 'Safe in escrow while the order is on its way'],
-  ['Order delivered', 'And the return window closes'],
-  ['Paid to your bank', 'Fees and taxes shown upfront, nothing hidden'],
-];
-
 function HeroSection({ rates }: { rates: CommissionRates | null }) {
+  const { t, format } = useI18n();
+  const steps = [
+    [t.sell.paid1Title, t.sell.paid1Body],
+    [t.sell.paid2Title, t.sell.paid2Body],
+    [t.sell.paid3Title, t.sell.paid3Body],
+    [t.sell.paid4Title, t.sell.paid4Body],
+  ];
   const lowest = rates?.categories.length
     ? Math.min(...rates.categories.map((c) => c.commissionPercent))
     : null;
@@ -68,24 +69,23 @@ function HeroSection({ rates }: { rates: CommissionRates | null }) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(60rem 40rem at 110% -10%, rgba(60,203,180,0.22), transparent 60%), radial-gradient(40rem 30rem at -20% 110%, rgba(60,203,180,0.12), transparent 60%)',
+            'radial-gradient(60rem 40rem at 110% -10%, rgb(var(--tl-logo-accent) / 0.22), transparent 60%), radial-gradient(40rem 30rem at -20% 110%, rgb(var(--tl-logo-accent) / 0.12), transparent 60%)',
         }}
       />
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:px-8 lg:py-20">
+      <div className="relative mx-auto grid grid-cols-1 max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:px-8 lg:py-20">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium ring-1 ring-white/15">
             <Icon name="shield" className="h-3.5 w-3.5 text-teal" />
-            Become a Trustlon seller
+            {t.sell.badge}
           </p>
           <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            Sell to shoppers who buy with trust.
+            {t.sell.heroTitle}
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
-            Reach customers across India with your own Brand Store, escrow-protected payouts and
-            GST-ready invoices on every order.
+            {t.sell.heroBody}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <StartSellingLink>Start selling</StartSellingLink>
+            <StartSellingLink>{t.sell.startSelling}</StartSellingLink>
             <a
               href="#fees"
               className={cn(
@@ -93,30 +93,30 @@ function HeroSection({ rates }: { rates: CommissionRates | null }) {
                 focusRing,
               )}
             >
-              Calculate your fees
+              {t.sell.calculateFees}
             </a>
           </div>
           <dl className="mt-10 grid max-w-lg grid-cols-2 gap-6 border-t border-white/15 pt-6 sm:grid-cols-3">
             <div>
-              <dt className="text-xs text-white/60">Commission</dt>
+              <dt className="text-xs text-white/60">{t.sell.statCommission}</dt>
               <dd className="mt-1 text-xl font-semibold">
-                {lowest !== null ? `From ${percent(lowest)}` : '—'}
+                {lowest !== null ? format(t.sell.statFrom, { rate: percent(lowest) }) : '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-white/60">Registration</dt>
-              <dd className="mt-1 text-xl font-semibold">Online</dd>
+              <dt className="text-xs text-white/60">{t.sell.statRegistration}</dt>
+              <dd className="mt-1 text-xl font-semibold">{t.sell.statRegistrationValue}</dd>
             </div>
             <div>
-              <dt className="text-xs text-white/60">Payments</dt>
-              <dd className="mt-1 text-xl font-semibold">Escrow</dd>
+              <dt className="text-xs text-white/60">{t.sell.statPayments}</dt>
+              <dd className="mt-1 text-xl font-semibold">{t.sell.statPaymentsValue}</dd>
             </div>
           </dl>
         </div>
         <div className="rounded-lg bg-white/5 p-6 ring-1 ring-white/15">
-          <p className="text-sm font-semibold">How you get paid</p>
+          <p className="text-sm font-semibold">{t.sell.paidTitle}</p>
           <ol className="mt-5 space-y-5">
-            {ESCROW_STEPS.map(([title, body], index) => (
+            {steps.map(([title, body], index) => (
               <li key={title} className="flex gap-4">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal text-sm font-semibold text-navy">
                   {index + 1}
@@ -137,29 +137,19 @@ function HeroSection({ rates }: { rates: CommissionRates | null }) {
 /* Benefits */
 
 function BenefitsGrid({ rates }: { rates: CommissionRates | null }) {
+  const { t, format } = useI18n();
+  const lowest = rates
+    ? Math.min(...rates.categories.map((c) => c.commissionPercent), rates.defaultCommissionPercent)
+    : null;
   const benefits = [
     {
       icon: 'bag' as const,
-      title: 'Low commission',
-      body: rates
-        ? `Category rates from ${percent(Math.min(...rates.categories.map((c) => c.commissionPercent), rates.defaultCommissionPercent))}. You only pay when you sell.`
-        : 'Clear category rates. You only pay when you sell.',
+      title: t.sell.benefit1Title,
+      body: format(t.sell.benefit1Body, { rate: lowest !== null ? percent(lowest) : '—' }),
     },
-    {
-      icon: 'lock' as const,
-      title: 'Escrow payouts',
-      body: 'Customers pay Trustlon, not a stranger, so they buy with confidence. Your money is released once the order is delivered.',
-    },
-    {
-      icon: 'star' as const,
-      title: 'Your own Brand Store',
-      body: 'A storefront page with your logo, banner and story, and a verified badge that builds trust.',
-    },
-    {
-      icon: 'check' as const,
-      title: 'GST tools built in',
-      body: 'A GST invoice for every order, GSTIN checks, and TCS and TDS shown clearly so you can claim them.',
-    },
+    { icon: 'lock' as const, title: t.sell.benefit2Title, body: t.sell.benefit2Body },
+    { icon: 'star' as const, title: t.sell.benefit3Title, body: t.sell.benefit3Body },
+    { icon: 'check' as const, title: t.sell.benefit4Title, body: t.sell.benefit4Body },
   ];
   return (
     <section
@@ -167,9 +157,9 @@ function BenefitsGrid({ rates }: { rates: CommissionRates | null }) {
       className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8"
     >
       <h2 id="benefits-title" className="text-2xl font-semibold text-navy sm:text-3xl">
-        Why sell on Trustlon
+        {t.sell.benefitsTitle}
       </h2>
-      <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {benefits.map((benefit) => (
           <li key={benefit.title} className="rounded-lg border border-slate-200 bg-white p-6">
             <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
@@ -201,8 +191,8 @@ const toPaise = (rupees: string) => {
 };
 
 function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; failed: boolean }) {
-  const ids = { price: useId(), category: useId(), gst: useId(), shipping: useId() };
-  const { language } = useI18n();
+  const ids = { price: useId(), shipping: useId() };
+  const { language, t, format } = useI18n();
   const [price, setPrice] = useState('999');
   const [categoryId, setCategoryId] = useState('');
   const [gstRate, setGstRate] = useState(18);
@@ -224,11 +214,11 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
     const shippingPaise = input.shipping ? toPaise(input.shipping) : 0;
     if (!Number.isFinite(pricePaise) || pricePaise < 100) {
       setResult(null);
-      setError('Enter a selling price of at least ₹1');
+      setError(t.sell.priceError);
       return;
     }
     if (!Number.isFinite(shippingPaise) || shippingPaise < 0) {
-      setError('Enter a valid shipping cost');
+      setError(t.sell.shippingError);
       return;
     }
     const controller = new AbortController();
@@ -248,31 +238,32 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
       .catch((caught) => {
         if (controller.signal.aborted) return;
         setResult(null);
-        setError(
-          caught instanceof ApiError && caught.message
-            ? caught.message
-            : 'We couldn’t calculate that. Try again.',
-        );
+        setError(caught instanceof ApiError && caught.message ? caught.message : t.sell.calcError);
       })
       .finally(() => !controller.signal.aborted && setLoading(false));
     return () => controller.abort();
+    // Messages follow the language; the calculation itself doesn't depend on it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input, rates]);
 
   const rows: Array<[string, number]> = result
     ? [
-        [`Commission (${percent(result.commissionBps / 100)})`, result.commissionPaise],
         [
-          `Payment collection (${percent(rates?.fees.paymentFeePercent ?? 0)})`,
+          format(t.sell.rowCommission, { rate: percent(result.commissionBps / 100) }),
+          result.commissionPaise,
+        ],
+        [
+          format(t.sell.rowPayment, { rate: percent(rates?.fees.paymentFeePercent ?? 0) }),
           result.paymentFeePaise,
         ],
-        [`GST on fees (${percent(rates?.fees.gstOnFeesPercent ?? 0)})`, result.gstOnFeesPaise],
-        [`TCS under GST (${percent(rates?.fees.tcsPercent ?? 0)}, claimable)`, result.tcsPaise],
         [
-          `TDS under income tax (${percent(rates?.fees.tdsPercent ?? 0)}, claimable)`,
-          result.tdsPaise,
+          format(t.sell.rowGst, { rate: percent(rates?.fees.gstOnFeesPercent ?? 0) }),
+          result.gstOnFeesPaise,
         ],
+        [format(t.sell.rowTcs, { rate: percent(rates?.fees.tcsPercent ?? 0) }), result.tcsPaise],
+        [format(t.sell.rowTds, { rate: percent(rates?.fees.tdsPercent ?? 0) }), result.tdsPaise],
         ...(result.shippingPaise > 0
-          ? ([['Shipping you pay', result.shippingPaise]] as Array<[string, number]>)
+          ? ([[t.sell.rowShipping, result.shippingPaise]] as Array<[string, number]>)
           : []),
       ]
     : [];
@@ -281,48 +272,50 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
     <section id="fees" aria-labelledby="fees-title" className="scroll-mt-6 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <h2 id="fees-title" className="text-2xl font-semibold text-navy sm:text-3xl">
-          Fee calculator
+          {t.sell.feesTitle}
         </h2>
-        <p className="mt-2 max-w-2xl text-slate-600">
-          See what you take home from a sale before you list anything.
-        </p>
+        <p className="mt-2 max-w-2xl text-slate-600">{t.sell.feesIntro}</p>
         {failed ? (
           <div className="mt-8">
-            <Alert>We couldn’t load commission rates. Refresh the page to try again.</Alert>
+            <Alert>{t.sell.feesLoadError}</Alert>
           </div>
         ) : (
-          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div className="space-y-5 rounded-lg border border-slate-200 bg-cream p-6">
               <TextField
                 id={ids.price}
-                label="Selling price (₹, including GST)"
+                label={t.sell.priceLabel}
                 inputMode="decimal"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
               <ListSelect
-                label="Category"
+                label={t.sell.categoryLabel}
                 value={categoryId || 'OTHER'}
                 disabled={!rates}
                 onChange={(next) => setCategoryId(next === 'OTHER' ? '' : next)}
-                searchPlaceholder="Search category"
+                searchPlaceholder={t.sell.categorySearch}
                 options={[
                   {
                     value: 'OTHER',
-                    label: 'Other',
-                    detail: `${percent(rates?.defaultCommissionPercent ?? 10)} commission`,
+                    label: t.sell.categoryOther,
+                    detail: format(t.sell.commissionDetail, {
+                      rate: percent(rates?.defaultCommissionPercent ?? 10),
+                    }),
                   },
                   ...(rates?.categories ?? []).map((category) => ({
                     value: category.id,
                     label: (language === 'hi' && category.nameHi) || category.name,
-                    detail: `${percent(category.commissionPercent)} commission`,
+                    detail: format(t.sell.commissionDetail, {
+                      rate: percent(category.commissionPercent),
+                    }),
                     keywords: category.name,
                   })),
                 ]}
               />
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <ListSelect
-                  label="Product GST rate"
+                  label={t.sell.gstLabel}
                   value={String(gstRate)}
                   onChange={(next) => setGstRate(Number(next))}
                   options={(rates?.gstRates ?? [0, 5, 18, 40]).map((rate) => ({
@@ -332,7 +325,7 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
                 />
                 <TextField
                   id={ids.shipping}
-                  label="Your shipping cost (₹)"
+                  label={t.sell.shippingLabel}
                   inputMode="decimal"
                   placeholder="0"
                   value={shipping}
@@ -360,18 +353,23 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
                 <div className={cn('transition-opacity', loading && 'opacity-60')}>
                   <div className="flex flex-wrap items-end justify-between gap-4 rounded-lg bg-navy p-5 text-white">
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-white/70">You receive</p>
+                      <p className="text-xs uppercase tracking-wider text-white/70">
+                        {t.sell.youReceive}
+                      </p>
                       <p className="mt-1 text-3xl font-semibold">
                         {formatMoney(result.netPayoutPaise)}
                       </p>
                     </div>
                     <p className="text-sm text-white/70">
-                      {percent(result.netPercent)} of {formatMoney(result.pricePaise)}
+                      {format(t.sell.netShare, {
+                        percent: percent(result.netPercent),
+                        price: formatMoney(result.pricePaise),
+                      })}
                     </p>
                   </div>
                   <dl className="mt-5 divide-y divide-slate-100 text-sm">
                     <div className="flex justify-between gap-4 py-2.5">
-                      <dt className="text-slate-600">Selling price</dt>
+                      <dt className="text-slate-600">{t.sell.sellingPrice}</dt>
                       <dd className="font-medium text-navy">{formatMoney(result.pricePaise)}</dd>
                     </div>
                     {rows.map(([label, amount]) => (
@@ -381,14 +379,12 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
                       </div>
                     ))}
                     <div className="flex justify-between gap-4 py-2.5 font-semibold">
-                      <dt className="text-navy">Net payout</dt>
+                      <dt className="text-navy">{t.sell.netPayout}</dt>
                       <dd className="text-teal-600">{formatMoney(result.netPayoutPaise)}</dd>
                     </div>
                   </dl>
                   <p className="mt-4 text-xs leading-relaxed text-slate-500">
-                    The price includes {formatMoney(result.gstCollectedPaise)} GST that you file and
-                    pay. TCS and TDS are credited to your GST and income-tax accounts. This is an
-                    estimate; your seller agreement has the final rates.
+                    {format(t.sell.feesNote, { gst: formatMoney(result.gstCollectedPaise) })}
                   </p>
                 </div>
               )}
@@ -403,17 +399,17 @@ function FeeCalculator({ rates, failed }: { rates: CommissionRates | null; faile
 /* Commission table */
 
 function CommissionTable({ rates }: { rates: CommissionRates }) {
-  const { language } = useI18n();
+  const { language, t, format } = useI18n();
   if (rates.categories.length === 0) return null;
   return (
     <section aria-labelledby="rates-title" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
       <h2 id="rates-title" className="text-2xl font-semibold text-navy sm:text-3xl">
-        Commission by category
+        {t.sell.ratesTitle}
       </h2>
       <p className="mt-2 text-slate-600">
-        Categories not listed here use {percent(rates.defaultCommissionPercent)}.
+        {format(t.sell.ratesIntro, { rate: percent(rates.defaultCommissionPercent) })}
       </p>
-      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {rates.categories.map((category) => (
           <li
             key={category.id}
@@ -434,30 +430,26 @@ function CommissionTable({ rates }: { rates: CommissionRates }) {
 
 /* Steps */
 
-const STEPS = [
-  ['Register', 'Create your seller account with your mobile number and email.'],
-  ['Complete KYC', 'Add your PAN, GSTIN, bank account and pickup address. We verify them for you.'],
-  [
-    'List products',
-    'Add photos, prices and stock. Our team checks each listing before it goes live.',
-  ],
-  [
-    'Start selling',
-    'Orders arrive in your seller panel. Pack them, and our courier partners pick up.',
-  ],
-];
-
 function StepsSection() {
+  const { t, format } = useI18n();
+  const steps = [
+    [t.sell.step1Title, t.sell.step1Body],
+    [t.sell.step2Title, t.sell.step2Body],
+    [t.sell.step3Title, t.sell.step3Body],
+    [t.sell.step4Title, t.sell.step4Body],
+  ];
   return (
     <section aria-labelledby="steps-title" className="bg-navy-50">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <h2 id="steps-title" className="text-2xl font-semibold text-navy sm:text-3xl">
-          Start in four steps
+          {t.sell.stepsTitle}
         </h2>
-        <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(([title, body], index) => (
+        <ol className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map(([title, body], index) => (
             <li key={title} className="relative rounded-lg border border-slate-200 bg-white p-6">
-              <span className="text-sm font-semibold text-teal-600">Step {index + 1}</span>
+              <span className="text-sm font-semibold text-teal-600">
+                {format(t.sell.stepLabel, { number: index + 1 })}
+              </span>
               <h3 className="mt-2 font-semibold text-navy">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{body}</p>
             </li>
@@ -481,7 +473,7 @@ interface LeadErrors {
 
 function LeadForm({ rates }: { rates: CommissionRates | null }) {
   const { user } = useAuth();
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const [values, setValues] = useState({
     contactName: '',
     businessName: '',
@@ -516,19 +508,13 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
     setFailure(null);
     const mobile = toMobileE164(national, phoneCountry);
     const found: LeadErrors = {};
-    if (!isValidName(values.contactName)) found.contactName = 'Enter your name using letters only';
-    if (values.businessName.trim().length < 2) found.businessName = 'Enter your business name';
-    if (!mobile) {
-      found.mobile =
-        phoneCountry === 'IN'
-          ? 'Enter a valid 10-digit Indian mobile number'
-          : 'Enter a valid mobile number for this country';
-    }
-    if (!isValidEmail(values.email))
-      found.email = 'Enter a valid email address, e.g. name@example.com';
-    if (values.city.trim().length < 2) found.city = 'Enter your city';
+    if (!isValidName(values.contactName)) found.contactName = t.sell.errName;
+    if (values.businessName.trim().length < 2) found.businessName = t.sell.errBusiness;
+    if (!mobile) found.mobile = t.sell.errMobile;
+    if (!isValidEmail(values.email)) found.email = t.sell.errEmail;
+    if (values.city.trim().length < 2) found.city = t.sell.errCity;
     if (values.gstin.trim() && !GSTIN_SHAPE.test(values.gstin.trim().toUpperCase())) {
-      found.gstin = 'A GSTIN has 15 characters, e.g. 29ABCDE1234F1Z5';
+      found.gstin = t.sell.errGstin;
     }
     setErrors(found);
     if (Object.keys(found).length > 0 || !mobile) return;
@@ -548,13 +534,9 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
       if (caught instanceof ApiError && caught.field && caught.field in values) {
         setErrors({ [caught.field as keyof LeadErrors]: caught.message } as LeadErrors);
       } else if (caught instanceof ApiError && caught.status === 429) {
-        setFailure('You’ve sent a few requests already. Our team will be in touch.');
+        setFailure(t.sell.errTooMany);
       } else {
-        setFailure(
-          caught instanceof ApiError && caught.message
-            ? caught.message
-            : 'We couldn’t send your details. Try again.',
-        );
+        setFailure(caught instanceof ApiError && caught.message ? caught.message : t.sell.errSend);
       }
     } finally {
       setBusy(false);
@@ -567,21 +549,14 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
       aria-labelledby="start-title"
       className="scroll-mt-6 mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8"
     >
-      <div className="grid gap-8 rounded-lg border border-slate-200 bg-white p-6 sm:p-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="grid grid-cols-1 gap-8 rounded-lg border border-slate-200 bg-white p-6 sm:p-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div>
           <h2 id="start-title" className="text-2xl font-semibold text-navy sm:text-3xl">
-            Ready to start?
+            {t.sell.leadTitle}
           </h2>
-          <p className="mt-3 text-slate-600">
-            Share a few details and our seller team will call you to set up your account and Brand
-            Store.
-          </p>
+          <p className="mt-3 text-slate-600">{t.sell.leadIntro}</p>
           <ul className="mt-6 space-y-3 text-sm text-slate-600">
-            {[
-              'Keep your PAN and GSTIN handy',
-              'A bank account in your business name',
-              'An address we can pick up orders from',
-            ].map((item) => (
+            {[t.sell.need1, t.sell.need2, t.sell.need3].map((item) => (
               <li key={item} className="flex gap-2">
                 <Icon name="check" className="h-5 w-5 shrink-0 text-teal-600" />
                 {item}
@@ -590,9 +565,9 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
           </ul>
           {VENDOR_PANEL_URL && (
             <p className="mt-6 text-sm text-slate-600">
-              Prefer to do it yourself?{' '}
+              {t.sell.selfServe}{' '}
               <a href={START_HREF} className="font-semibold text-teal-600 hover:underline">
-                Register in the seller panel
+                {t.sell.selfServeLink}
               </a>
             </p>
           )}
@@ -603,37 +578,37 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-teal-600">
               <Icon name="check" className="h-6 w-6" />
             </span>
-            <p className="text-lg font-semibold text-navy">Request received</p>
+            <p className="text-lg font-semibold text-navy">{t.sell.received}</p>
             <p className="text-slate-600">{done}</p>
           </div>
         ) : (
-          <form onSubmit={submit} noValidate className="grid gap-5 sm:grid-cols-2">
+          <form onSubmit={submit} noValidate className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <TextField
-              label="Your name"
+              label={t.sell.nameLabel}
               autoComplete="name"
               value={values.contactName}
               error={errors.contactName}
               onChange={set('contactName')}
             />
             <TextField
-              label="Business name"
+              label={t.sell.businessLabel}
               autoComplete="organization"
               value={values.businessName}
               error={errors.businessName}
               onChange={set('businessName')}
             />
             <MobileField
-              label="Mobile number"
+              label={t.sell.mobileLabel}
               country={phoneCountry}
               onCountryChange={setPhoneCountry}
               locale={language}
-              placeholder="10-digit mobile number"
+              placeholder={t.placeholders.mobile}
               value={national}
               error={errors.mobile}
               onChange={(e) => setNational(e.target.value)}
             />
             <TextField
-              label="Email"
+              label={t.sell.emailLabel}
               type="email"
               autoComplete="email"
               value={values.email}
@@ -641,7 +616,7 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
               hint={
                 suggestEmail(values.email) ? (
                   <span>
-                    Did you mean{' '}
+                    {t.sell.didYouMean}{' '}
                     <button
                       type="button"
                       className="font-semibold text-teal-600 underline underline-offset-2"
@@ -661,17 +636,18 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
               onChange={set('email')}
             />
             <CityField
+              label={t.sell.cityLabel}
               country="IN"
               value={values.city}
               error={errors.city}
               onChange={(city) => setValues((current) => ({ ...current, city }))}
             />
             <ListSelect
-              label="What do you sell? (optional)"
-              placeholder="Choose a category"
+              label={t.sell.categoryOptional}
+              placeholder={t.sell.categoryPlaceholder}
               value={values.category}
               onChange={(category) => setValues((current) => ({ ...current, category }))}
-              searchPlaceholder="Search category"
+              searchPlaceholder={t.sell.categorySearch}
               options={(rates?.categories ?? []).map((category) => ({
                 value: category.id,
                 label: (language === 'hi' && category.nameHi) || category.name,
@@ -680,12 +656,12 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
             />
             <div className="sm:col-span-2">
               <TextField
-                label="GSTIN (optional)"
+                label={t.sell.gstinLabel}
                 autoCapitalize="characters"
                 maxLength={15}
                 value={values.gstin}
                 error={errors.gstin}
-                hint="Add it now to speed up KYC."
+                hint={t.sell.gstinHint}
                 onChange={set('gstin')}
               />
             </div>
@@ -695,12 +671,10 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
               </div>
             )}
             <div className="sm:col-span-2">
-              <p className="mb-4 text-xs text-slate-500">
-                We use these details only to contact you about selling on Trustlon.
-              </p>
+              <p className="mb-4 text-xs text-slate-500">{t.sell.privacyNote}</p>
               <div className="sm:w-56">
                 <Button type="submit" loading={busy}>
-                  Request a call
+                  {t.sell.requestCall}
                 </Button>
               </div>
             </div>
@@ -713,41 +687,23 @@ function LeadForm({ rates }: { rates: CommissionRates | null }) {
 
 /* FAQ */
 
-const FAQS: Array<[string, string]> = [
-  [
-    'Who can sell on Trustlon?',
-    'Any business in India with a PAN and a bank account in its name: brands, manufacturers, wholesalers, retailers and neighbourhood shops.',
-  ],
-  [
-    'Do I need a GSTIN?',
-    'In most cases, yes. GST law generally requires businesses selling goods through an online marketplace to be registered. If you sell only within your state and are below the GST limit, our team will check whether you qualify for an exemption.',
-  ],
-  [
-    'When do I get paid?',
-    'Customer payments are held in escrow. They are released to your bank account after the order is delivered and its return window has closed, minus the fees shown in the calculator above.',
-  ],
-  [
-    'What are TCS and TDS?',
-    'Taxes that marketplaces must collect on every sale and deposit with the government in your name. They are not fees: you claim them back against your GST and income-tax liability.',
-  ],
-  [
-    'Who delivers the orders?',
-    'Our courier partners pick up from your address and deliver to the customer. You can track every shipment in your seller panel.',
-  ],
-  [
-    'How do returns work?',
-    'Each category has a return window that customers see before they buy. Returned items come back to you, and our team checks claims with photos before a refund is approved.',
-  ],
-];
-
 function FaqSection() {
+  const { t } = useI18n();
+  const faqs = [
+    [t.sell.faq1Q, t.sell.faq1A],
+    [t.sell.faq2Q, t.sell.faq2A],
+    [t.sell.faq3Q, t.sell.faq3A],
+    [t.sell.faq4Q, t.sell.faq4A],
+    [t.sell.faq5Q, t.sell.faq5A],
+    [t.sell.faq6Q, t.sell.faq6A],
+  ];
   return (
     <section aria-labelledby="faq-title" className="mx-auto max-w-3xl px-4 pb-16 sm:px-6 lg:px-8">
       <h2 id="faq-title" className="text-2xl font-semibold text-navy sm:text-3xl">
-        Questions sellers ask
+        {t.sell.faqTitle}
       </h2>
       <div className="mt-6 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
-        {FAQS.map(([question, answer]) => (
+        {faqs.map(([question, answer]) => (
           <details key={question} className="group px-5 py-4">
             <summary
               className={cn(
@@ -766,9 +722,9 @@ function FaqSection() {
         ))}
       </div>
       <div className="mt-10 flex flex-col items-center gap-3 text-center">
-        <p className="text-slate-600">Ready when you are.</p>
+        <p className="text-slate-600">{t.sell.readyText}</p>
         <StartSellingLink className="bg-navy text-white hover:bg-navy-700">
-          Start selling
+          {t.sell.startSelling}
         </StartSellingLink>
       </div>
     </section>
@@ -777,6 +733,8 @@ function FaqSection() {
 
 /** /sell: Become a vendor (spec 3.12). Public, no sign-in needed. */
 export function SellPage() {
+  const { t } = useI18n();
+  const { features } = useSiteConfig().config;
   const [rates, setRates] = useState<CommissionRates | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -794,13 +752,23 @@ export function SellPage() {
       <HomeHeader />
       <CategoryNav />
       <main className="bg-cream">
-        <HeroSection rates={rates} />
-        <BenefitsGrid rates={rates} />
-        <FeeCalculator rates={rates} failed={failed} />
-        {rates && <CommissionTable rates={rates} />}
-        <StepsSection />
-        <LeadForm rates={rates} />
-        <FaqSection />
+        {features.sellPage ? (
+          <>
+            <HeroSection rates={rates} />
+            <BenefitsGrid rates={rates} />
+            <FeeCalculator rates={rates} failed={failed} />
+            {rates && <CommissionTable rates={rates} />}
+            <StepsSection />
+            <LeadForm rates={rates} />
+            <FaqSection />
+          </>
+        ) : (
+          // Turned off in Admin › Settings › Features.
+          <section className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6">
+            <h1 className="text-3xl font-semibold text-navy">{t.sell.closedTitle}</h1>
+            <p className="mt-3 text-slate-600">{t.sell.closedBody}</p>
+          </section>
+        )}
       </main>
       <HomeFooter />
       <MarketplaceDialogs />

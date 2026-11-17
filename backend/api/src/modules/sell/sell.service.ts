@@ -4,43 +4,55 @@ import { VendorLeadStatus } from '@prisma/client';
 import { checkGstin } from '../../common/utils/gstin';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FeeCalculatorDto, VendorLeadDto } from './dto';
-import {
-  calculateFees,
-  GST_ON_FEES_BPS,
-  PAYMENT_FEE_BPS,
-  PLATFORM_DEFAULT_COMMISSION_BPS,
-  PRODUCT_GST_RATES_BPS,
-  TCS_BPS,
-  TDS_BPS,
-} from './fees';
+import { SiteSettingsService } from '../site/site-settings.service';
+import { calculateFees, FeeRates, PRODUCT_GST_RATES_BPS } from './fees';
 
 /** Emitted when a business asks to sell on Trustlon; the onboarding team is notified. */
 export const VENDOR_LEAD_CREATED = 'sell.vendor-lead-created';
 
 const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 const percent = (bps: number) => bps / 100;
+const toBps = (value: number) => Math.round(value * 100);
 
 @Injectable()
 export class SellService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventEmitter2,
+    private readonly site: SiteSettingsService,
   ) {}
+
+  /** Live rates from /admin > Business settings. */
+  private async rates(): Promise<FeeRates & { defaultCommissionBps: number }> {
+    const [rules, payments, tax] = await Promise.all([
+      this.site.get('business-rules'),
+      this.site.get('payments'),
+      this.site.get('tax'),
+    ]);
+    return {
+      defaultCommissionBps: toBps(rules.defaultCommissionPercent),
+      paymentFeeBps: toBps(payments.paymentFeePercent),
+      gstOnFeesBps: toBps(tax.gstOnFeesPercent),
+      tcsBps: toBps(tax.tcsPercent),
+      tdsBps: toBps(tax.tdsPercent),
+    };
+  }
 
   /** Commission per main category, for the fee table and calculator. */
   async commissionRates() {
+    const rates = await this.rates();
     const categories = await this.prisma.category.findMany({
       where: { parentId: null, isActive: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: { id: true, slug: true, name: true, nameHi: true, commissionBps: true },
     });
     return {
-      defaultCommissionPercent: percent(PLATFORM_DEFAULT_COMMISSION_BPS),
+      defaultCommissionPercent: percent(rates.defaultCommissionBps),
       fees: {
-        paymentFeePercent: percent(PAYMENT_FEE_BPS),
-        gstOnFeesPercent: percent(GST_ON_FEES_BPS),
-        tcsPercent: percent(TCS_BPS),
-        tdsPercent: percent(TDS_BPS),
+        paymentFeePercent: percent(rates.paymentFeeBps),
+        gstOnFeesPercent: percent(rates.gstOnFeesBps),
+        tcsPercent: percent(rates.tcsBps),
+        tdsPercent: percent(rates.tdsBps),
       },
       gstRates: PRODUCT_GST_RATES_BPS.map(percent),
       categories: categories.map((category) => ({
@@ -48,13 +60,14 @@ export class SellService {
         slug: category.slug,
         name: category.name,
         nameHi: category.nameHi,
-        commissionPercent: percent(category.commissionBps ?? PLATFORM_DEFAULT_COMMISSION_BPS),
+        commissionPercent: percent(category.commissionBps ?? rates.defaultCommissionBps),
       })),
     };
   }
 
   async calculate(dto: FeeCalculatorDto) {
-    let commissionBps = PLATFORM_DEFAULT_COMMISSION_BPS;
+    const rates = await this.rates();
+    let commissionBps = rates.defaultCommissionBps;
     let categoryName: string | null = null;
     if (dto.categoryId) {
       const category = await this.prisma.category.findFirst({
@@ -70,20 +83,26 @@ export class SellService {
       }
       categoryName = category.name;
       commissionBps =
-        category.commissionBps ?? category.parent?.commissionBps ?? PLATFORM_DEFAULT_COMMISSION_BPS;
+        category.commissionBps ?? category.parent?.commissionBps ?? rates.defaultCommissionBps;
     }
     return {
       categoryName,
-      ...calculateFees({
-        pricePaise: dto.pricePaise,
-        commissionBps,
-        gstRateBps: dto.gstRateBps ?? 1800,
-        shippingPaise: dto.shippingPaise,
-      }),
+      ...calculateFees(
+        {
+          pricePaise: dto.pricePaise,
+          commissionBps,
+          gstRateBps: dto.gstRateBps ?? 1800,
+          shippingPaise: dto.shippingPaise,
+        },
+        rates,
+      ),
     };
   }
 
   async createLead(dto: VendorLeadDto, ip?: string) {
+    if (!(await this.site.get('features')).sellPage) {
+      throw new BadRequestException('Seller sign-up is closed right now. Please check back soon.');
+    }
     if (dto.gstin) {
       const check = checkGstin(dto.gstin);
       if (!check.valid) {
@@ -94,8 +113,8 @@ export class SellService {
       const exists = await this.prisma.category.count({ where: { id: dto.categoryId } });
       if (!exists) dto.categoryId = undefined;
     }
-    const message =
-      'Thanks! Our seller team will call you within 2 working days to help you get started.';
+    const { sellerCallbackDays: days } = await this.site.get('business-rules');
+    const message = `Thanks! Our seller team will call you within ${days} working day${days > 1 ? 's' : ''} to help you get started.`;
 
     // A second request from the same number within a day is treated as the same lead.
     const recent = await this.prisma.vendorLead.findFirst({
