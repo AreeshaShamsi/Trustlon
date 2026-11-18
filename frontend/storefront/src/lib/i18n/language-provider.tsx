@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { en, type Dictionary, type PartialDictionary } from './en';
 import { hi } from './hi';
+import { API_PROXY_PATH } from '../api-url';
 import { isLanguage, languageInfo, type Language } from './languages';
 
 export {
@@ -120,7 +121,7 @@ function loadOverrides(language: Language, version: number): Promise<Record<stri
   const cacheKey = `${language}:${version}`;
   const hit = overrideCache.get(cacheKey);
   if (hit) return Promise.resolve(hit);
-  return fetch(`/api/v1/site/content/${language}?v=${version}`, {
+  return fetch(`${API_PROXY_PATH}/site/content/${language}?v=${version}`, {
     headers: { Accept: 'application/json' },
   })
     .then((response) => (response.ok ? response.json() : { entries: {} }))

@@ -1,13 +1,11 @@
 import { DEFAULT_CONFIG, type SiteConfig } from './theme';
-
-/** Server-side API address (same as the /api rewrite in next.config). */
-const API_URL = process.env.API_URL ?? 'http://localhost:4000';
+import { backendUrl } from './api-url';
 /** How long the server reuses settings before asking the API again. */
 const REVALIDATE_SECONDS = 30;
 
 async function getJson<T>(path: string): Promise<T | null> {
   try {
-    const response = await fetch(`${API_URL}/api/v1${path}`, {
+    const response = await fetch(backendUrl(path), {
       next: { revalidate: REVALIDATE_SECONDS },
       signal: AbortSignal.timeout(2000),
     });

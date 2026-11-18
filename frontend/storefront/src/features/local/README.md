@@ -57,7 +57,7 @@ npm run dev:storefront
 ```
 
 The default URLs are `http://localhost:4000/api/v1` and `http://localhost:3000`. The existing Next.js
-proxy uses server-side `API_URL`; the frontend has no new hardcoded service URL.
+proxy uses `NEXT_PUBLIC_API_URL` (including `/api/v1`); see `docs/api-integration-audit.md` for production configuration.
 
 ## Browser checks
 

@@ -1,4 +1,4 @@
-const API_BASE = '/api/v1';
+import { API_PROXY_PATH as API_BASE } from './api-url';
 
 export class ApiError extends Error {
   constructor(
@@ -134,7 +134,10 @@ async function sendAuthed(path: string, init: RequestInit = {}): Promise<Respons
     fetch(`${API_BASE}${path}`, {
       ...init,
       credentials: 'include',
-      headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     });
   let response = await send(accessToken);
   if (response.status === 401) {
