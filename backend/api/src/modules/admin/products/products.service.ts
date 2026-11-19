@@ -34,6 +34,7 @@ const EDITABLE = [
   'mrpPaise',
   'categoryId',
   'hsnCode',
+  'gstRateBps',
   'codAllowed',
   'badge',
   'isBundle',
@@ -47,7 +48,7 @@ interface Change {
 
 const productInclude = {
   vendor: {
-    select: { id: true, displayName: true, status: true, isVerified: true, trustScore: true },
+    select: { id: true, displayName: true, status: true, isVerified: true, trustScore: true, pickup: { select: { state: true } } },
   },
   category: { select: { id: true, name: true, slug: true } },
 } satisfies Prisma.ProductInclude;
@@ -218,6 +219,7 @@ export class AdminProductsService {
       stock: product.stock,
       status: product.status,
       hsnCode: product.hsnCode,
+      gstRateBps: product.gstRateBps,
       codAllowed: product.codAllowed,
       badge: product.badge,
       isBundle: product.isBundle,
@@ -249,6 +251,9 @@ export class AdminProductsService {
 
   async approve(id: string, note: string | undefined, actor: Actor) {
     const product = await this.product(id);
+    if (!/^\d{4,8}$/.test(product.hsnCode ?? '') || product.gstRateBps === null || !Number.isInteger(product.gstRateBps) || product.gstRateBps < 0 || product.gstRateBps > 4000 || !product.vendor.pickup?.state) {
+      throw new BadRequestException('HSN code, GST rate, and vendor pickup state are required before publishing this product.');
+    }
     if (product.authenticity === AuthenticityStatus.FLAGGED) {
       throw new ConflictException('Finish the authenticity check before approving');
     }
@@ -441,7 +446,7 @@ export class AdminProductsService {
   }
 
   private async product(id: string) {
-    const product = await this.prisma.product.findFirst({ where: { id, deletedAt: null } });
+    const product = await this.prisma.product.findFirst({ where: { id, deletedAt: null }, include: { vendor: { select: { pickup: { select: { state: true } } } } } });
     if (!product) throw new NotFoundException('Product not found');
     return product;
   }

@@ -58,6 +58,22 @@ export class LocationController {
   }
 }
 
+/** Checkout contract alias; the storefront's older /pincode routes remain supported. */
+@Controller('pincodes')
+export class CheckoutPincodeController {
+  constructor(private readonly pincodes: PincodeService) {}
+
+  @Get(':pincode')
+  @Throttle(SEARCH_THROTTLE)
+  @Header('Cache-Control', 'public, max-age=86400')
+  async lookup(@Param('pincode') pincode: string) {
+    if (!PINCODE_PATTERN.test(pincode)) throw new BadRequestException('Enter a valid six-digit pincode');
+    const found = await this.pincodes.lookup(pincode);
+    if (!found) throw new NotFoundException('We could not find this pincode. Check the number.');
+    return found;
+  }
+}
+
 /** Countries, states and cities for address forms anywhere in the app. */
 @Controller('location')
 export class CountriesController {

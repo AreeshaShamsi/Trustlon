@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Dialog, TextField } from '@/design-system';
+import { CartDrawer } from '@/features/cart/components/CartDrawer';
 import { homeApi } from '../api';
 import { formatPrice } from '../format';
 import { useHome } from '../home-provider';
@@ -122,7 +123,7 @@ export function MarketplaceDialogs() {
         </form>
       </Dialog>
 
-      <Dialog open={home.panel === 'cart'} title="Your shopping bag" onClose={() => home.setPanel(null)}>
+      <Dialog open={false && home.panel === 'cart'} title="Your shopping bag" onClose={() => home.setPanel(null)}>
         <div className="space-y-5">
           {lines.length === 0 && (
             <p className="py-8 text-center text-slate-500">Nothing here yet. Discover something you love.</p>
@@ -186,6 +187,8 @@ export function MarketplaceDialogs() {
           )}
         </div>
       </Dialog>
+
+      <CartDrawer open={home.panel === 'cart'} onClose={() => home.setPanel(null)} />
 
       <Dialog open={home.panel === 'wishlist'} title="Your saved favourites" onClose={() => home.setPanel(null)}>
         <div className="space-y-5">

@@ -15,6 +15,15 @@ export const envSchema = z
     RAZORPAY_KEY_ID: z.string().optional(),
     RAZORPAY_KEY_SECRET: z.string().optional(),
     RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+    PAYMENT_MODE: z.enum(['mock', 'razorpay']).default('mock'),
+    MOCK_PAYMENT_SECRET: z.string().min(16).default('mock-payment-secret-development'),
+    FREE_SHIPPING_THRESHOLD_PAISE: z.coerce.number().int().nonnegative().default(100000),
+    PREPAID_DISCOUNT_BPS: z.coerce.number().int().min(0).max(10000).default(0),
+    COD_LIMIT_PAISE: z.coerce.number().int().nonnegative().default(500000),
+    COD_FEE_PAISE: z.coerce.number().int().nonnegative().default(0),
+    EMI_MINIMUM_PAISE: z.coerce.number().int().nonnegative().default(300000),
+    SAME_DAY_CUTOFF_HOUR: z.coerce.number().int().min(0).max(23).default(14),
+    STOCK_RESERVATION_TTL_SECONDS: z.coerce.number().int().positive().default(900),
 
     JWT_ACCESS_SECRET: z.string().min(32),
     OTP_SECRET: z.string().min(32),
@@ -55,6 +64,9 @@ export const envSchema = z
       .transform((value) => (value ? value : undefined)),
   })
   .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production' && env.PAYMENT_MODE === 'mock') {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['PAYMENT_MODE'], message: 'Mock payments are not allowed in production' });
+    }
     if (env.NODE_ENV === 'production' && env.OTP_PROVIDER === 'console') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

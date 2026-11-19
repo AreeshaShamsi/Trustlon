@@ -149,7 +149,7 @@ export function HomeHeader({
             )}
           </button>
           <button
-            onClick={() => home.setPanel('cart')}
+            onClick={home.openCart}
             aria-label={`Shopping cart, ${count} items`}
             className={cn(
               'relative flex h-11 w-11 items-center justify-center rounded-lg',

@@ -142,6 +142,37 @@ describe('Cart and checkout (database + HTTP)', () => {
     await Promise.all([payments.confirm(payment), payments.confirm(payment)]);
     expect((await db.order.findUniqueOrThrow({ where: { id: order.id } })).paymentStatus).toBe('PAID');
   });
+  it('confirms from a webhook alone when the browser never calls verify', async () => {
+    const { order, payment } = await pending();
+    const raw = JSON.stringify({ event: 'order.paid', payload: { payment: { entity: payment } } });
+    await payments.webhook(Buffer.from(raw), signed(raw), `evt-${randomUUID()}`);
+    const confirmed = await db.order.findUniqueOrThrow({ where: { id: order.id } });
+    expect(confirmed.paymentStatus).toBe('PAID');
+    expect(confirmed.confirmedAt).not.toBeNull();
+  });
+  it('deduplicates two HTTP submissions with the same Idempotency-Key', async () => {
+    const dto = await input();
+    const [first, second] = await Promise.all([
+      http().post('/api/v1/orders').auth(token, { type: 'bearer' }).set('Idempotency-Key', dto.checkoutKey).send(dto),
+      http().post('/api/v1/orders').auth(token, { type: 'bearer' }).set('Idempotency-Key', dto.checkoutKey).send(dto),
+    ]);
+    expect([first.status, second.status].every(status => status === 201 || status === 200)).toBe(true);
+    expect(first.body.id ?? second.body.id).toBeTruthy();
+    expect(first.body.id ?? first.body.orderId).toBe(second.body.id ?? second.body.orderId);
+  });
+  it('prevents overselling when two users reserve the final unit concurrently', async () => {
+    const other = await db.user.create({ data: { fullName: 'Concurrent Buyer', mobile: `+919${Date.now().toString().slice(-9)}`, email: `concurrent-${suffix}@example.com`, referralCode: `C${suffix}`, termsAcceptedAt: new Date() } });
+    const otherAddress = await db.address.create({ data: { userId: other.id, fullName: 'Concurrent Buyer', mobile: other.mobile, line1: '123 Test Street', city: 'Bengaluru', state: 'Karnataka', pincode: '560001' } });
+    await db.product.update({ where: { id: productIds[0] }, data: { stock: 1 } });
+    await cart.removeItem(shopper(), productIds[1]); await cart.change(shopper(), productIds[0], { quantity: 1 });
+    const otherShopper = { kind: 'user' as const, userId: other.id };
+    await cart.addItem(otherShopper, productIds[0], 1);
+    const makeInput = async (ownerId: string, ownerAddress: string) => { const quote = await checkout.validate(ownerId, { addressId: ownerAddress }); return { addressId: ownerAddress, paymentMethod: 'UPI' as const, deliveries: [{ vendorId: vendorIds[0], method: 'standard' as const }], checkoutKey: randomUUID(), fingerprint: quote.fingerprint }; };
+    const results = await Promise.allSettled([checkout.create(userId, await makeInput(userId, addressId)), checkout.create(other.id, await makeInput(other.id, otherAddress.id))]);
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+    expect(await db.product.findUniqueOrThrow({ where: { id: productIds[0] } })).toMatchObject({ stock: 0 });
+    await db.order.deleteMany({ where: { userId: other.id } }); await db.cart.deleteMany({ where: { userId: other.id } }); await db.address.deleteMany({ where: { userId: other.id } }); await db.user.delete({ where: { id: other.id } });
+  });
   it('releases failed payments once and never confirms late captures', async () => {
     const { order, payment } = await pending();
     const raw = Buffer.from(JSON.stringify({ event: 'payment.failed', payload: { payment: { entity: { ...payment, status: 'failed' } } } }));

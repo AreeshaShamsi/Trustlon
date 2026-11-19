@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Env } from '../../config/env';
 import { ConsoleOtpSender, OTP_SENDER } from './otp-sender';
+import { NotificationQueueService } from './notification-queue.service';
 
 @Module({
   providers: [
     ConsoleOtpSender,
+    NotificationQueueService,
     {
       provide: OTP_SENDER,
       inject: [ConfigService, ConsoleOtpSender],
@@ -18,6 +20,6 @@ import { ConsoleOtpSender, OTP_SENDER } from './otp-sender';
       },
     },
   ],
-  exports: [OTP_SENDER],
+  exports: [OTP_SENDER, NotificationQueueService],
 })
 export class NotificationsModule {}

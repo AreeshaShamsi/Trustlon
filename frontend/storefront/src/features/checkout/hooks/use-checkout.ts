@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth';
 import { accountApi } from '@/features/account/api';
 import type { Address } from '@/features/account/types';
 import { checkoutApi } from '../api';
+import { ApiError } from '@/lib/http';
 import type { CheckoutInput, CheckoutQuote } from '../types';
 export function useCheckout() {
   const { status } = useAuth();
@@ -28,8 +29,8 @@ export function useCheckout() {
     if (status !== 'authenticated') return;
     const abort = new AbortController();
     setLoading(true); setError('');
-    checkoutApi.validate(input, abort.signal).then(data => { if (!abort.signal.aborted) setQuote(data); })
-      .catch(e => { if (!abort.signal.aborted) { setQuote(undefined); setError(e instanceof Error ? e.message : 'Could not validate checkout.'); } })
+    checkoutApi.validate(input, abort.signal).then(data => { if (!abort.signal.aborted) { setQuote(data); setError(data.issues?.[0]?.message ?? ''); } })
+      .catch(e => { if (!abort.signal.aborted) { setQuote(undefined); setError(e instanceof ApiError && e.status === 409 ? 'Your cart price or stock changed. We refreshed the checkout; please review the totals.' : e instanceof Error ? e.message : 'Could not validate checkout.'); } })
       .finally(() => { if (!abort.signal.aborted) setLoading(false); });
     return () => abort.abort();
   }, [input, status, attempt]);

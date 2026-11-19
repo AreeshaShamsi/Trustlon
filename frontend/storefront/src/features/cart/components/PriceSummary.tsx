@@ -30,6 +30,7 @@ export function PriceSummary({
     { label: 'Items total', value: summary.itemsTotal, negative: false, isFree: false },
     { label: 'Discount', value: summary.discount, negative: true, isFree: false },
     { label: 'Coupon', value: summary.couponDiscount, negative: true, isFree: false },
+    { label: 'Prepaid discount', value: summary.prepaidDiscount ?? 0, negative: true, isFree: false },
     {
       label: 'Delivery fee',
       value: summary.deliveryFee,
@@ -37,6 +38,8 @@ export function PriceSummary({
       isFree: summary.deliveryFee === 0,
     },
     { label: 'Coins used', value: summary.coinsUsed, negative: true, isFree: false },
+    { label: 'Wallet used', value: summary.walletAppliedPaise ?? 0, negative: true, isFree: false },
+    { label: 'COD fee', value: summary.codFee ?? 0, negative: false, isFree: false },
   ];
 
   return (

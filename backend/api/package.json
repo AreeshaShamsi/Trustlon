@@ -12,6 +12,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "tax:backfill:dev": "ts-node prisma/backfill-dev-tax.ts",
     "postinstall": "prisma generate",
     "test": "node -r ../../realpath-patch.cjs ../../node_modules/jest/bin/jest.js --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",

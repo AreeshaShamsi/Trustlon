@@ -1,0 +1,1 @@
+ALTER TABLE payments ADD COLUMN provider VARCHAR(20) NOT NULL DEFAULT 'razorpay';

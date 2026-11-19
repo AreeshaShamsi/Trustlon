@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { checkoutApi } from '../api';
 import type { CheckoutInput, CreatedOrder, PaymentVerification } from '../types';
 import { button } from '../../product/components/primitives';
@@ -17,7 +17,7 @@ function loadRazorpay() {
   });
   return script;
 }
-export function PlaceOrderButton({ input, fingerprint, disabled, onPlaced }: { input: CheckoutInput; fingerprint: string; disabled?: boolean; onPlaced: () => void }) {
+export function PlaceOrderButton({ input, fingerprint, disabled, onPlaced, autoStart = false }: { input: CheckoutInput; fingerprint: string; disabled?: boolean; onPlaced: () => void; autoStart?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [complete, setComplete] = useState(false);
@@ -29,7 +29,6 @@ export function PlaceOrderButton({ input, fingerprint, disabled, onPlaced }: { i
     let opened = false;
     const unlock = () => { locked.current = false; setBusy(false); };
     try {
-      await loadRazorpay();
       if (!request.current || request.current.fingerprint !== fingerprint) {
         let key: string | null = null;
         try { key = sessionStorage.getItem(`tl_checkout_${fingerprint}`); } catch { /* Storage can be disabled. */ }
@@ -40,6 +39,11 @@ export function PlaceOrderButton({ input, fingerprint, disabled, onPlaced }: { i
       attempt.order ??= await checkoutApi.create({ ...input, checkoutKey: attempt.key, fingerprint });
       const order = attempt.order;
       const gateway = await checkoutApi.gateway(order.id);
+      if (gateway.mode === 'mock') {
+        window.location.href = gateway.mockPaymentUrl ?? `/payments/mock/${order.id}`;
+        return;
+      }
+      await loadRazorpay();
       const checkout = new window.Razorpay!({
         key: gateway.keyId, order_id: gateway.orderId, amount: gateway.amount, currency: gateway.currency, name: 'Trustlon',
         prefill: { method: input.paymentMethod?.toLowerCase() },
@@ -49,7 +53,7 @@ export function PlaceOrderButton({ input, fingerprint, disabled, onPlaced }: { i
           setMessage('Verifying payment…');
           try {
             const result = await checkoutApi.verify({ ...response, orderId: order.id });
-            if (result.confirmed) { setComplete(true); setMessage(`Order ${order.orderNumber} confirmed.`); onPlaced(); }
+            if (result.confirmed) { setComplete(true); setMessage(`Order ${order.orderNumber} confirmed.`); onPlaced(); window.location.href = `/order/success/${encodeURIComponent(order.id)}`; }
             else setMessage(result.message ?? 'Payment is processing. Check your orders for confirmation.');
           } catch (e) { setMessage(`${e instanceof Error ? e.message : 'Verification is pending.'} Check My orders before retrying payment.`); }
           finally { unlock(); }
@@ -60,5 +64,6 @@ export function PlaceOrderButton({ input, fingerprint, disabled, onPlaced }: { i
     } catch (e) { setMessage(e instanceof Error ? e.message : 'Could not place your order. Please try again.'); }
     finally { if (!opened) unlock(); }
   }
+  useEffect(() => { if (autoStart) void place(); }, [autoStart]);
   return <div className="space-y-3"><button type="button" className={`${button} w-full`} disabled={disabled || busy || complete} onClick={() => void place()}>{complete ? 'Order confirmed' : busy ? 'Processing…' : 'Place order'}</button><p role="status" className="text-sm text-teal-700">{message}</p>{request.current?.order && <a className="text-sm text-teal-700 underline" href={`/account/orders/${request.current.order.id}`}>View order status</a>}</div>;
 }

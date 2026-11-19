@@ -41,6 +41,7 @@ export interface Product {
   inStock: boolean;
   codAvailable: boolean;
   deal: { endsAt: string } | null;
+  variantLabel?: string | null;
 }
 
 export interface ProductDetail extends Product {
@@ -81,6 +82,13 @@ export interface Store {
 export interface StoreDetail extends Store {
   description: string | null;
   productCount: number;
+  followerCount: number;
+  rating: number | null;
+  ratingCount: number;
+  isFollowing: boolean;
+  banners: Array<{ id: string; title: string; subtitle: string | null; image: string; href: string | null }>;
+  collections: Array<{ id: string; title: string; description: string | null; products: Product[] }>;
+  policies: { returnPolicy: string; shippingTime: string; businessAddress: string | null };
 }
 
 export interface LocalSeller extends Store {
@@ -141,6 +149,8 @@ export interface CartLine {
   productId: string;
   slug: string;
   name: string;
+  variantLabel?: string | null;
+  stockStatus?: 'in_stock' | 'low' | 'out';
   image: string;
   quantity: number;
   unitPricePaise: number;
@@ -162,6 +172,9 @@ export interface Cart {
   subtotalPaise: number;
   savingsPaise: number;
   hasUnavailableItems: boolean;
+  freeShippingThresholdPaise?: number;
+  prepaidDiscountBps?: number;
+  emiMinimumPaise?: number;
 }
 
 export interface Suggestions {

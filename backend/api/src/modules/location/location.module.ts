@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { CitySearchService } from './city-search.service';
-import { CountriesController, LocationController } from './location.controller';
+import { CheckoutPincodeController, CountriesController, LocationController } from './location.controller';
 import { PincodeService } from './pincode.service';
 
 @Module({
-  controllers: [LocationController, CountriesController],
+  controllers: [LocationController, CheckoutPincodeController, CountriesController],
   providers: [PincodeService, CitySearchService],
   exports: [PincodeService],
 })

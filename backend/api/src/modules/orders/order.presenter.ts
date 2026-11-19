@@ -133,7 +133,10 @@ export interface OrderDetail {
   orderNumber: string;
   placedAt: Date;
   stage: OrderStage;
-  payment: { method: PaymentMethod; status: PaymentStatus; reference: string | null };
+  payment: { method: PaymentMethod; preference: string | null; status: PaymentStatus; reference: string | null };
+  gstin: string | null;
+  walletUsedPaise: number;
+  taxBreakup: Record<string, number> | null;
   shippingAddress: ShippingAddress;
   breakup: {
     mrpTotalPaise: number;
@@ -283,9 +286,13 @@ export function toOrderDetail(order: OrderDetailRow, now = new Date()): OrderDet
     stage: orderStage(order.subOrders.map((sub) => sub.status)),
     payment: {
       method: order.paymentMethod,
+      preference: order.checkoutPaymentMethod,
       status: order.paymentStatus,
       reference: order.paymentReference,
     },
+    gstin: order.gstin,
+    walletUsedPaise: order.walletUsedPaise,
+    taxBreakup: order.taxBreakup && typeof order.taxBreakup === 'object' && !Array.isArray(order.taxBreakup) ? Object.fromEntries(Object.entries(order.taxBreakup).filter(([, value]) => typeof value === 'number')) as Record<string, number> : null,
     shippingAddress: toShippingAddress(order.shippingAddress),
     breakup: {
       mrpTotalPaise: order.mrpTotalPaise,

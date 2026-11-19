@@ -1,0 +1,12 @@
+'use client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMemo } from 'react';
+import { ProductCard } from '../home/components/ProductCard';
+import { SectionError, SectionSkeleton } from '../home/components/SectionStates';
+import type { Product } from '../home/types';
+export function ProductGrid({ products, loading, error, totalPages, onRetry }: { products: Product[]; loading: boolean; error: boolean; totalPages: number; onRetry: () => void }) {
+  const router = useRouter(); const params = useSearchParams(); const page = Number(params.get('page') ?? 1); const sort = params.get('sort') ?? 'relevance';
+  const set = (key: string, value: string) => { const next = new URLSearchParams(params); if (value) next.set(key, value); else next.delete(key); if (key !== 'page') next.delete('page'); router.replace(`?${next}`); };
+  const heading = useMemo(() => `All products${products.length ? ` (${products.length})` : ''}`, [products.length]);
+  return <section aria-labelledby="store-products"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 id="store-products" className="text-xl font-semibold">{heading}</h2><label className="text-sm text-slate-500">Sort <select aria-label="Sort store products" value={sort} onChange={(e) => set('sort', e.target.value)} className="ml-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-navy"><option value="relevance">Relevance</option><option value="popularity">Popularity</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="rating">Rating</option></select></label></div>{loading ? <SectionSkeleton cards={8} title={false} gridClassName="grid-cols-2 md:grid-cols-3 xl:grid-cols-4" /> : error ? <SectionError message="We could not load this store's products." onRetry={onRetry} /> : !products.length ? <p className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-slate-500">No products match these filters.</p> : <><div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">{products.map((product) => <ProductCard key={product.id} product={product} />)}</div>{page < totalPages && <button type="button" className="mx-auto mt-8 block rounded-lg border border-slate-200 px-5 py-3 text-sm font-semibold hover:border-teal-600 hover:text-teal-600" onClick={() => set('page', String(page + 1))}>Load more</button>}</>}</section>;
+}

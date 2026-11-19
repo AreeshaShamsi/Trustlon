@@ -105,7 +105,7 @@ export function LocalSellerList({
                 <p className="text-sm text-slate-500">No in-stock products right now.</p>
               )}
               <Link
-                href={`/browse/${encodeURIComponent(seller.slug)}`}
+                href={`/store/${encodeURIComponent(seller.slug)}`}
                 className={cn(
                   'mt-4 inline-flex min-h-11 items-center rounded-lg font-semibold text-teal-600',
                   focusRing,

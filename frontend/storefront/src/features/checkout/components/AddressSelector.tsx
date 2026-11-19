@@ -4,40 +4,10 @@ import type { Address, AddressInput } from '@/features/account/types';
 import { accountApi } from '@/features/account/api';
 import { homeApi } from '@/features/home/api';
 import { button, field, secondary } from '../../product/components/primitives';
+export const formatAddressLine = (line: string, city: string, state: string, pincode: string, line2?: string | null, landmark?: string | null) => `${line.replace(new RegExp(`,\\s*[^,]+,\\s*${state.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}$`, 'i'), '').trim()}${line2 ? `, ${line2}` : ''}${landmark ? `, ${landmark}` : ''}, ${city}, ${state} ${pincode}`;
 export function AddressSelector({ addresses, value, onSelect, onSaved }: { addresses: Address[]; value?: string; onSelect: (id: string) => void; onSaved: (addresses: Address[]) => void }) {
-  const [adding, setAdding] = useState(false);
-  const [input, setInput] = useState<AddressInput>({ label: 'HOME', fullName: '', mobile: '', line1: '', pincode: '', country: 'IN', city: '', state: '' });
-  const [busy, setBusy] = useState(false);
-  const [lookup, setLookup] = useState(false);
-  const [validPin, setValidPin] = useState('');
-  const [message, setMessage] = useState('');
-  useEffect(() => {
-    let cancelled = false;
-    setValidPin(''); setInput(old => ({ ...old, city: '', state: '' }));
-    if (!/^[1-9]\d{5}$/.test(input.pincode)) { setLookup(false); return; }
-    setLookup(true); setMessage('');
-    homeApi.serviceability(input.pincode).then(pin => {
-      if (cancelled) return;
-      if (!pin.serviceable || !pin.city || !pin.state) { setMessage('Delivery is not available at this pincode yet.'); return; }
-      setInput(old => ({ ...old, city: pin.city!, state: pin.state! })); setValidPin(input.pincode);
-    }).catch(() => { if (!cancelled) setMessage('Could not check this pincode. Please try again.'); })
-      .finally(() => { if (!cancelled) setLookup(false); });
-    return () => { cancelled = true; };
-  }, [input.pincode]);
-  return <div className="space-y-4"><fieldset className="space-y-3"><legend className="mb-3 text-xl font-semibold">Shipping address</legend>
-    {addresses.map(address => <label key={address.id} className="flex cursor-pointer gap-3 rounded-2xl border border-slate-200 p-4"><input type="radio" name="address" checked={value === address.id} disabled={!address.delivery.serviceable} onChange={() => onSelect(address.id)} className="mt-1 accent-teal-700 focus-visible:ring-2 focus-visible:ring-teal-600" /><span><strong>{address.fullName}</strong><span className="mt-1 block text-sm text-slate-600">{address.line1}, {address.city}, {address.state} {address.pincode}</span>{!address.delivery.serviceable && <span className="text-sm text-slate-500">Delivery is not available at this address.</span>}</span></label>)}
-    {!addresses.length && <p className="text-slate-500">Add an address to continue.</p>}
-  </fieldset><button type="button" className={secondary} onClick={() => setAdding(v => !v)}>{adding ? 'Cancel' : 'Add new address'}</button>
-    {adding && <form className="grid gap-4 sm:grid-cols-2" onSubmit={async e => {
-      e.preventDefault(); if (busy || validPin !== input.pincode) return;
-      setBusy(true); setMessage('');
-      try { const result = await accountApi.createAddress(input); onSaved(result.items); const created = result.items.find(a => !addresses.some(old => old.id === a.id)); if (created) onSelect(created.id); setAdding(false); }
-      catch (e) { setMessage(e instanceof Error ? e.message : 'Please try again.'); }
-      finally { setBusy(false); }
-    }}>
-      {(['fullName', 'mobile', 'line1', 'pincode', 'city', 'state'] as const).map(key => <label key={key} className="text-sm"><span>{{ fullName: 'Full name', mobile: 'Mobile number', line1: 'House number and street', pincode: 'Pincode', city: 'City', state: 'State' }[key]}</span><input className={`${field} mt-1 focus-visible:ring-2 focus-visible:ring-teal-600`} required readOnly={key === 'city' || key === 'state'} value={input[key]} inputMode={key === 'pincode' || key === 'mobile' ? 'numeric' : 'text'} maxLength={key === 'pincode' ? 6 : key === 'mobile' ? 20 : 120} pattern={key === 'pincode' ? '[1-9][0-9]{5}' : undefined} onChange={e => setInput(old => ({ ...old, [key]: e.target.value }))} /></label>)}
-      <button className={button} disabled={busy || lookup || validPin !== input.pincode}>{busy ? 'Saving…' : lookup ? 'Checking pincode…' : 'Save address'}</button>
-    </form>}
-    <p role="status" className="text-sm text-teal-700">{message}</p>
-  </div>;
+  const [adding, setAdding] = useState(false); const [input, setInput] = useState<AddressInput>({ label: 'HOME', fullName: '', mobile: '', line1: '', pincode: '', country: 'IN', city: '', state: '' }); const [busy, setBusy] = useState(false); const [lookup, setLookup] = useState(false); const [validPin, setValidPin] = useState(''); const [message, setMessage] = useState('');
+  useEffect(() => { let cancelled = false; setValidPin(''); setInput(old => ({ ...old, city: '', state: '' })); if (!/^[1-9]\d{5}$/.test(input.pincode)) { setLookup(false); return; } setLookup(true); homeApi.serviceability(input.pincode).then(pin => { if (cancelled) return; if (!pin.serviceable || !pin.city || !pin.state) { setMessage('Delivery is not available at this pincode yet.'); return; } setInput(old => ({ ...old, city: pin.city!, state: pin.state! })); setValidPin(input.pincode); }).catch(() => { if (!cancelled) setMessage('Could not check this pincode. Please try again.'); }).finally(() => { if (!cancelled) setLookup(false); }); return () => { cancelled = true; }; }, [input.pincode]);
+  async function remove(id: string) { const result = await accountApi.removeAddress(id); onSaved(result.items); if (value === id && result.items[0]) onSelect(result.items[0].id); }
+  return <div className="space-y-5"><div className="grid gap-3 md:grid-cols-2">{addresses.map(address => <label key={address.id} className={`relative flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${value === address.id ? 'border-teal-600 bg-teal-50/60' : 'border-slate-200 bg-white'}`}><input type="radio" name="address" checked={value === address.id} disabled={!address.delivery.serviceable} onChange={() => onSelect(address.id)} className="mt-1 accent-teal-700" /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><strong>{address.fullName}</strong><span className="rounded-full bg-navy-50 px-2 py-0.5 text-[10px] uppercase">{address.label}</span>{address.isDefault && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-800">Default</span>}</span><span className="mt-2 block text-sm text-slate-600">{address.mobile}<br />{formatAddressLine(address.line1, address.city, address.state, address.pincode, address.line2, address.landmark)}</span>{!address.delivery.serviceable && <span className="mt-2 block text-xs text-rose-700">Not deliverable to this pincode</span>}</span><span className="absolute right-3 top-3 flex gap-2"><button type="button" aria-label={`Edit ${address.fullName} address`} className="text-xs underline">Edit</button><button type="button" aria-label={`Delete ${address.fullName} address`} className="text-xs text-rose-700 underline" onClick={e => { e.preventDefault(); void remove(address.id); }}>Delete</button></span></label>)}<button type="button" className="flex min-h-32 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 text-sm font-semibold text-navy hover:border-teal-600" onClick={() => setAdding(v => !v)}>＋ Add new address</button></div>{adding && <form className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2" onSubmit={async e => { e.preventDefault(); if (busy || validPin !== input.pincode) return; setBusy(true); try { const result = await accountApi.createAddress(input); onSaved(result.items); const created = result.items.find(a => !addresses.some(old => old.id === a.id)); if (created) onSelect(created.id); setAdding(false); } catch (e) { setMessage(e instanceof Error ? e.message : 'Please try again.'); } finally { setBusy(false); } }}><h3 className="sm:col-span-2 font-semibold">Add new address</h3>{(['fullName', 'mobile', 'line1', 'pincode', 'city', 'state'] as const).map(key => <label key={key} className="text-sm"><span>{{ fullName: 'Full name', mobile: 'Mobile number', line1: 'House number and street', pincode: 'Pincode', city: 'City', state: 'State' }[key]}</span><input className={`${field} mt-1`} required readOnly={key === 'city' || key === 'state'} value={input[key]} inputMode={key === 'pincode' || key === 'mobile' ? 'numeric' : 'text'} maxLength={key === 'pincode' ? 6 : 120} onChange={e => setInput(old => ({ ...old, [key]: e.target.value }))} /></label>)}<button className={`${button} sm:col-span-2`} disabled={busy || lookup || validPin !== input.pincode}>{busy ? 'Saving…' : lookup ? 'Checking pincode…' : 'Save address'}</button></form>}<p role="status" className="text-sm text-rose-700">{message}</p></div>;
 }

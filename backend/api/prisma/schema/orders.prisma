@@ -75,10 +75,110 @@ model Order {
   subOrders      SubOrder[]
   supportTickets SupportTicket[]
   notes          OrderNote[]
+  payments       Payment[]
+  reservations   StockReservation[]
+  escrowEntries  EscrowLedger[]
+  notificationJobs NotificationJob[]
 
   @@index([userId, placedAt])
   @@index([reservationState, reservationExpiresAt])
   @@map("orders")
+}
+
+/// Gateway attempts are kept separately from the parent order so retries and
+/// webhook delivery can be made idempotent without losing audit history.
+model Payment {
+  id                String   @id @default(uuid()) @db.Uuid
+  orderId           String   @map("order_id") @db.Uuid
+  razorpayOrderId   String   @unique @map("razorpay_order_id") @db.VarChar(80)
+  razorpayPaymentId String?  @unique @map("razorpay_payment_id") @db.VarChar(80)
+  amountPaise       Int      @map("amount_paise")
+  currency          String   @default("INR") @db.Char(3)
+  provider          String   @default("razorpay") @db.VarChar(20)
+  status            String   @default("CREATED") @db.VarChar(24)
+  failureCode       String?  @map("failure_code") @db.VarChar(80)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  @@index([orderId, status])
+  @@map("payments")
+}
+
+model StockReservation {
+  id          String   @id @default(uuid()) @db.Uuid
+  orderId     String   @map("order_id") @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  quantity    Int
+  expiresAt   DateTime @map("expires_at")
+  status      String   @default("ACTIVE") @db.VarChar(16)
+  createdAt   DateTime @default(now()) @map("created_at")
+  consumedAt  DateTime? @map("consumed_at")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  @@unique([orderId, productId])
+  @@index([status, expiresAt])
+  @@map("stock_reservations")
+}
+
+model EscrowLedger {
+  id          String   @id @default(uuid()) @db.Uuid
+  orderId     String   @map("order_id") @db.Uuid
+  entryType   String   @map("entry_type") @db.VarChar(32)
+  amountPaise Int      @map("amount_paise")
+  createdAt   DateTime @default(now()) @map("created_at")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  @@index([orderId, entryType])
+  @@map("escrow_ledger")
+}
+
+model WebhookEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  eventId     String   @unique @map("event_id") @db.VarChar(120)
+  event       String   @db.VarChar(80)
+  receivedAt  DateTime @default(now()) @map("received_at")
+  processedAt DateTime? @map("processed_at")
+  @@map("webhook_events")
+}
+
+model CheckoutSession {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  cartId      String   @map("cart_id") @db.Uuid
+  step        String   @default("ADDRESS") @db.VarChar(20)
+  payload    Json?
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  @@unique([userId, cartId])
+  @@index([userId])
+  @@map("checkout_sessions")
+}
+
+model PincodeCache {
+  pincode    String   @id @db.Char(6)
+  city       String?
+  state      String?
+  serviceable Boolean?
+  payload    Json?
+  expiresAt  DateTime @map("expires_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  @@index([expiresAt])
+  @@map("pincode_cache")
+}
+
+model NotificationJob {
+  id            String   @id @default(uuid()) @db.Uuid
+  orderId       String   @map("order_id") @db.Uuid
+  channel       String   @db.VarChar(16)
+  event         String   @db.VarChar(40)
+  status        String   @default("PENDING") @db.VarChar(16)
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at")
+  lastError     String?  @map("last_error") @db.VarChar(300)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  @@unique([orderId, channel, event])
+  @@index([status, nextAttemptAt])
+  @@map("notification_jobs")
 }
 
 /// One seller's part of an order, with its own status, shipment, invoice and payout.
@@ -136,6 +236,11 @@ model OrderItem {
   hsnCode        String? @map("hsn_code") @db.VarChar(8)
   /// GST rate in basis points (1800 = 18%).
   gstRateBps     Int     @map("gst_rate_bps")
+  taxablePaise   Int     @default(0) @map("taxable_paise")
+  cgstPaise      Int     @default(0) @map("cgst_paise")
+  sgstPaise      Int     @default(0) @map("sgst_paise")
+  igstPaise      Int     @default(0) @map("igst_paise")
+  taxPaise       Int     @default(0) @map("tax_paise")
   quantity       Int
   unitPricePaise Int     @map("unit_price_paise")
   unitMrpPaise   Int     @map("unit_mrp_paise")

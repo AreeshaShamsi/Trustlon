@@ -39,6 +39,8 @@ interface HomeState {
 
   panel: Panel;
   setPanel: (panel: Panel) => void;
+  openCart: () => void;
+  addedProduct: Product | null;
   notice: string;
   announce: (message: string) => void;
 }
@@ -63,6 +65,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const [recent, setRecent] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
+  const [addedProduct, setAddedProduct] = useState<Product | null>(null);
   const [notice, announce] = useState('');
   const syncedGuestWishlist = useRef(false);
 
@@ -136,6 +139,9 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const addToCart = useCallback(async (product: Product, quantity = 1, throwOnError = false) => {
     try {
       setCart(await homeApi.addToCart(product.id, quantity));
+      setAddedProduct(product);
+      setSelectedProduct(null);
+      setPanel('cart');
       announce(`${product.name} added to your cart.`);
     } catch (error) {
       announce(errorMessage(error));
@@ -211,6 +217,8 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
       closeProduct: () => setSelectedProduct(null),
       panel,
       setPanel,
+      openCart: () => { setAddedProduct(null); setPanel('cart'); },
+      addedProduct,
       notice,
       announce,
     }),
@@ -230,6 +238,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
       selectedProduct,
       viewProduct,
       panel,
+      addedProduct,
       notice,
     ],
   );

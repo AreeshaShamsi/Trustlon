@@ -8,12 +8,14 @@ export function Dialog({
   onClose,
   children,
   variant = 'modal',
+  className,
 }: {
   open: boolean;
-  title: string;
+  title: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
   variant?: 'modal' | 'drawer';
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -46,7 +48,8 @@ export function Dialog({
         'overflow-y-auto bg-white p-0 text-navy shadow-sm backdrop:bg-navy/60',
         variant === 'modal'
           ? 'm-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg rounded-lg'
-          : 'm-0 ml-auto h-dvh max-h-dvh w-full max-w-sm',
+          : 'm-0 ml-auto h-dvh max-h-dvh w-full max-w-[420px]',
+        className,
       )}
     >
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">

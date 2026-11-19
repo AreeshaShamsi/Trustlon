@@ -26,7 +26,7 @@ export function FeaturedBrandStores({
       {list.map((store) => (
         <Link
           key={store.slug}
-          href={`/browse/${store.slug}`}
+          href={`/store/${encodeURIComponent(store.slug)}`}
           className="group overflow-hidden rounded-lg border border-slate-200 bg-white"
         >
           <ProductImage src={store.image ?? ''} alt="" className="h-32 w-full object-cover" />

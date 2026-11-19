@@ -112,6 +112,7 @@ model Product {
   reviews        Review[]
   affiliateLinks AffiliateLink[]
   submissions    ProductSubmission[]
+  storeCollections StoreCollectionProduct[]
 
   @@index([categoryId, status])
   @@index([vendorId, status])

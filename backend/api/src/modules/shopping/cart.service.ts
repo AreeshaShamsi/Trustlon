@@ -1,11 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { Optional } from '@nestjs/common';
 import { ownerWhere, Shopper } from '../../common/shopper/shopper';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MAX_QUANTITY_PER_ITEM } from '../catalog/product.presenter';
 import { COIN_RULES } from '../wallet/wallet.service';
 import { CartChanges, CartGroupView, CartItemView, CartView, StockStatus } from './cart.types';
 import { checkCoupon } from './coupon-rules';
+import { Env } from '../../config/env';
 export type { CartView } from './cart.types';
 
 export const cartInclude = {
@@ -39,7 +42,7 @@ export const purchasable = (p: CartRecord['items'][number]['product']): boolean 
 
 @Injectable()
 export class CartService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly config?: ConfigService<Env, true>) {}
 
   async record(shopper: Shopper, db: Prisma.TransactionClient = this.prisma): Promise<CartRecord | null> {
     if (shopper.kind === 'guest') {
@@ -222,6 +225,9 @@ export class CartService {
       subtotalPaise: subtotal,
       savingsPaise: itemsTotal - subtotal,
       hasUnavailableItems,
+      freeShippingThresholdPaise: this.config?.get('FREE_SHIPPING_THRESHOLD_PAISE', { infer: true }) ?? 100000,
+      prepaidDiscountBps: this.config?.get('PREPAID_DISCOUNT_BPS', { infer: true }) ?? 0,
+      emiMinimumPaise: this.config?.get('EMI_MINIMUM_PAISE', { infer: true }) ?? 300000,
     };
   }
 

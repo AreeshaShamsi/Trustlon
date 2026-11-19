@@ -187,7 +187,7 @@ export function BuyBox({
           {product.seller.slug ? (
             <a
               className="font-semibold text-[#12203F]"
-              href={`/browse/${encodeURIComponent(product.seller.slug)}`}
+              href={`/store/${encodeURIComponent(product.seller.slug)}`}
             >
               {product.seller.name}
             </a>

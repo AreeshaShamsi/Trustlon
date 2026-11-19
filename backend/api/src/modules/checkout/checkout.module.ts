@@ -3,5 +3,6 @@ import { ShoppingModule } from '../shopping/shopping.module';
 import { CheckoutController } from './checkout.controller';
 import { CheckoutService } from './checkout.service';
 import { PaymentsService } from './payments.service';
-@Module({ imports: [ShoppingModule], controllers: [CheckoutController], providers: [CheckoutService, PaymentsService] })
+import { NotificationsModule } from '../notifications/notifications.module';
+@Module({ imports: [ShoppingModule, NotificationsModule], controllers: [CheckoutController], providers: [CheckoutService, PaymentsService] })
 export class CheckoutModule {}

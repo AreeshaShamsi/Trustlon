@@ -9,6 +9,7 @@ import { ProductsService } from '../catalog/products.service';
 
 import { PincodeService } from '../location/pincode.service';
 import { LocalSeller, StoreSummary, toStoreSummary } from './store.presenter';
+import { StoreProductQueryDto } from './store-products.dto';
 
 @Injectable()
 export class StoresService {
@@ -38,13 +39,90 @@ export class StoresService {
     return vendors.map(toStoreSummary);
   }
 
-  async bySlug(slug: string) {
-    const vendor = await this.prisma.vendor.findFirst({ where: { ...activeVendorWhere, slug } });
+  async bySlug(slug: string, userId?: string) {
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { ...activeVendorWhere, kycApprovedAt: { not: null }, slug },
+      include: {
+        storeBanners: { where: { isActive: true }, orderBy: [{ priority: 'asc' }, { createdAt: 'desc' }] },
+        storeCollections: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            products: {
+              orderBy: { sortOrder: 'asc' },
+              include: { product: { include: productInclude } },
+              take: 8,
+            },
+          },
+        },
+        _count: { select: { storeFollowers: true } },
+      },
+    });
     if (!vendor) throw new NotFoundException('Store not found');
     const productCount = await this.prisma.product.count({
       where: { ...liveProductWhere, vendorId: vendor.id },
     });
-    return { ...toStoreSummary(vendor), description: vendor.description, productCount };
+    const rating = await this.prisma.product.aggregate({
+      where: { ...liveProductWhere, vendorId: vendor.id },
+      _avg: { ratingAvg: true },
+      _sum: { ratingCount: true },
+    });
+    const following = userId
+      ? Boolean(await this.prisma.storeFollow.findUnique({ where: { userId_vendorId: { userId, vendorId: vendor.id } } }))
+      : false;
+    return {
+      ...toStoreSummary(vendor),
+      description: vendor.description,
+      productCount,
+      rating: rating._sum.ratingCount && rating._sum.ratingCount > 0 ? rating._avg.ratingAvg : null,
+      ratingCount: rating._sum.ratingCount ?? 0,
+      followerCount: vendor._count.storeFollowers,
+      isFollowing: following,
+      banners: vendor.storeBanners.map((banner) => ({ id: banner.id, title: banner.title, subtitle: banner.subtitle, image: banner.imageUrl, href: banner.href })),
+      collections: await Promise.all(vendor.storeCollections.map(async (collection) => ({
+        id: collection.id,
+        title: collection.title,
+        description: collection.description,
+        products: await this.products.present(collection.products.map((item) => item.product)),
+      }))),
+      policies: {
+        returnPolicy: 'See our returns policy for eligible products.',
+        shippingTime: 'Delivery times are shown at checkout.',
+        businessAddress: vendor.pickupAddress,
+      },
+    };
+  }
+
+  async productsForStore(slug: string, query: StoreProductQueryDto) {
+    await this.requireStore(slug);
+    return this.products.list({
+      ...query,
+      store: [slug],
+      sort: query.sort,
+      radiusKm: 10,
+    });
+  }
+
+  async follow(slug: string, userId: string) {
+    const vendor = await this.requireStore(slug);
+    await this.prisma.storeFollow.upsert({
+      where: { userId_vendorId: { userId, vendorId: vendor.id } },
+      create: { userId, vendorId: vendor.id },
+      update: {},
+    });
+    return { following: true, followerCount: await this.prisma.storeFollow.count({ where: { vendorId: vendor.id } }) };
+  }
+
+  async unfollow(slug: string, userId: string) {
+    const vendor = await this.requireStore(slug);
+    await this.prisma.storeFollow.deleteMany({ where: { userId, vendorId: vendor.id } });
+    return { following: false, followerCount: await this.prisma.storeFollow.count({ where: { vendorId: vendor.id } }) };
+  }
+
+  private async requireStore(slug: string) {
+    const vendor = await this.prisma.vendor.findFirst({ where: { ...activeVendorWhere, kycApprovedAt: { not: null }, slug } });
+    if (!vendor) throw new NotFoundException('Store not found');
+    return vendor;
   }
 
   /** Both endpoints use exactly the same server-side eligibility rules. */

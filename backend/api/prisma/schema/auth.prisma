@@ -111,6 +111,7 @@ model User {
   notificationPreference NotificationPreference?
   accountDeletion        AccountDeletion?
   staffMfa               StaffMfa?
+  storeFollows           StoreFollow[]
 
   @@map("users")
 }

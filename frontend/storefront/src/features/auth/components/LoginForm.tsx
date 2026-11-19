@@ -193,7 +193,7 @@ function OtpLoginForm() {
 export function LoginForm() {
   const { t } = useI18n();
   const params = useSearchParams();
-  const [tab, setTab] = useState<Tab>('password');
+  const [tab, setTab] = useState<Tab>(() => useSearchParams().get('mode') === 'otp' ? 'otp' : 'password');
   const fromCheckout = safeNextPath(params.get('next')).startsWith('/checkout');
 
   return (

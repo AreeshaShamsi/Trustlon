@@ -41,6 +41,9 @@ export interface PriceSummaryView {
   deliveryFee: number;
   coinsUsed: number;
   totalPayable: number;
+  prepaidDiscount?: number;
+  codFee?: number;
+  walletAppliedPaise?: number;
 }
 
 export interface CartView {
@@ -54,6 +57,9 @@ export interface CartView {
   subtotalPaise: number;
   savingsPaise: number;
   hasUnavailableItems: boolean;
+  freeShippingThresholdPaise: number;
+  prepaidDiscountBps?: number;
+  emiMinimumPaise?: number;
 }
 
 export interface CartChanges {

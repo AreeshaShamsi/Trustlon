@@ -116,7 +116,10 @@ export interface OrderDetail {
   orderNumber: string;
   placedAt: string;
   stage: OrderStage;
-  payment: { method: PaymentMethod; status: PaymentStatus; reference: string | null };
+  payment: { method: PaymentMethod; preference?: string | null; status: PaymentStatus; reference: string | null };
+  gstin?: string | null;
+  walletUsedPaise?: number;
+  taxBreakup?: Record<string, number> | null;
   shippingAddress: ShippingAddress;
   breakup: {
     mrpTotalPaise: number;

@@ -216,17 +216,21 @@ export class AddressesService {
     const byPincode = new Map(known.map((row) => [row.pincode, row]));
     return rows.map((row) => {
       const pin = row.country === 'IN' ? byPincode.get(row.pincode) : undefined;
+      const city = pin?.city ?? row.city;
+      const state = pin?.state ?? row.state;
+      const escapedState = state.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const line1 = row.line1.replace(new RegExp(`,\\s*[^,]+,\\s*${escapedState}$`, 'i'), '').trim();
       return {
         id: row.id,
         label: row.label,
         labelName: row.labelName,
         fullName: row.fullName,
         mobile: row.mobile,
-        line1: row.line1,
+        line1,
         line2: row.line2,
         landmark: row.landmark,
-        city: row.city,
-        state: row.state,
+        city,
+        state,
         pincode: row.pincode,
         country: row.country,
         isDefault: row.isDefault,

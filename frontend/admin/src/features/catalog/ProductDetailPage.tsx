@@ -45,6 +45,7 @@ interface Product {
   stock: number;
   status: string;
   hsnCode: string | null;
+  gstRateBps: number | null;
   codAllowed: boolean;
   badge: string | null;
   rejectionReason: string | null;
@@ -91,6 +92,7 @@ export function ProductDetailPage({ id }: { id: string }) {
 
   const pending = p.submissions.find((s) => s.status === 'PENDING');
   const awaiting = Boolean(pending) || ['PENDING_APPROVAL', 'CHANGES_REQUESTED'].includes(p.status);
+  const taxReady = /^\d{4,8}$/.test(p.hsnCode ?? '') && p.gstRateBps !== null && Number.isInteger(p.gstRateBps) && p.gstRateBps >= 0 && p.gstRateBps <= 4000;
   const post = (path: string, body: object) => async (reason: string) =>
     setData(
       await apiFetch<Product>(`/admin/products/${p.id}/${path}`, {
@@ -229,6 +231,7 @@ export function ProductDetailPage({ id }: { id: string }) {
                 ['Vendor status', humanize(p.vendor.status)],
                 ['Category', p.category.name],
                 ['HSN code', p.hsnCode],
+                ['GST rate', p.gstRateBps === null ? null : `${p.gstRateBps / 100}%`],
                 ['Stock', p.stock],
                 ['Cash on delivery', p.codAllowed ? 'Allowed' : 'Not allowed'],
                 [
@@ -270,10 +273,11 @@ export function ProductDetailPage({ id }: { id: string }) {
                   className="w-full"
                   tone="primary"
                   onClick={() => setDialog('approve')}
-                  disabled={p.authenticity === 'FLAGGED' || p.authenticity === 'FAILED'}
+                  disabled={p.authenticity === 'FLAGGED' || p.authenticity === 'FAILED' || !taxReady}
                 >
                   Approve{pending?.kind === 'EDIT' ? ' edit' : ''}
                 </Btn>
+                {!taxReady && <p className="text-xs text-amber-700">Add a valid HSN code and GST rate before publishing.</p>}
                 {p.authenticity === 'FLAGGED' && (
                   <p className="text-xs text-amber-700">Finish the authenticity check first.</p>
                 )}

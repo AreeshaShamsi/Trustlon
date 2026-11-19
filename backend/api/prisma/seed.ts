@@ -3,10 +3,14 @@
  * Run with `npm run db:seed` from the repository root. Never run against production.
  */
 import { BannerPlacement, HomeSectionKey, PrismaClient, ProductStatus, VendorStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { computeDiscountPercent } from '../src/modules/catalog/catalog.queries';
 import { seedAccountDemo } from './seed-account';
 import { seedAccountExtras } from './seed-account-extras';
 import { seedAccountMore } from './seed-account-more';
+import { seedLocal } from './seed-local';
+
+const BCRYPT_ROUNDS = 12;
 
 const rupees = (value: number) => Math.round(value * 100);
 
@@ -180,10 +184,93 @@ export async function seedHomepage(prisma: PrismaClient): Promise<{ products: nu
   return { products: PRODUCTS.length };
 }
 
+const BRAND_VENDORS = [
+  { slug: 'trustlon', displayName: 'Trustlon', initials: 'TL', tagline: 'Everyday essentials, designed by Trustlon', logoUrl: '/images/home/logo.png', bannerUrl: '/images/home/interior.jpg', trustScore: 100, isPlatformOwned: true, sameDayDelivery: true },
+  { slug: 'demo-electronics', displayName: 'Demo Electronics', initials: 'DE', tagline: 'Smart tech for everyday life', logoUrl: '/images/home/audio.jpg', bannerUrl: '/images/home/hero.jpg', trustScore: 96, isPlatformOwned: false, sameDayDelivery: true },
+  { slug: 'demo-fashion', displayName: 'Demo Fashion', initials: 'DF', tagline: 'Easy pieces, made to move', logoUrl: '/images/home/sneakers.jpg', bannerUrl: '/images/home/sneakers.jpg', trustScore: 94, isPlatformOwned: false, sameDayDelivery: true },
+  { slug: 'demo-home', displayName: 'Demo Home', initials: 'DH', tagline: 'Thoughtful pieces for every room', logoUrl: '/images/home/chair.jpg', bannerUrl: '/images/home/interior.jpg', trustScore: 92, isPlatformOwned: false, sameDayDelivery: true },
+  { slug: 'demo-unapproved', displayName: 'Demo Unapproved', initials: 'DU', tagline: 'Approval test store', logoUrl: '/images/home/coffee.jpg', bannerUrl: '/images/home/coffee.jpg', trustScore: 20, isPlatformOwned: false, sameDayDelivery: false },
+] as const;
+
+const BRAND_PRODUCTS = [
+  ['wireless-studio-headphones', 'Wireless Studio Headphones', 'electronics', 2499, 4999, '/images/home/headphones.jpg'],
+  ['compact-smart-watch', 'Compact Smart Watch', 'electronics', 2999, 5499, '/images/home/watch.jpg'],
+  ['usb-c-travel-charger', 'USB-C Travel Charger', 'electronics', 899, 1299, '/images/home/audio.jpg'],
+  ['portable-bluetooth-speaker', 'Portable Bluetooth Speaker', 'electronics', 1599, 2499, '/images/home/audio.jpg'],
+  ['everyday-cotton-shirt', 'Everyday Cotton Shirt', 'fashion', 1199, 1999, '/images/home/sneakers.jpg'],
+  ['relaxed-fit-sneakers', 'Relaxed Fit Sneakers', 'fashion', 1899, 2999, '/images/home/sneakers.jpg'],
+  ['canvas-weekend-tote', 'Canvas Weekend Tote', 'fashion', 999, 1599, '/images/home/backpack.jpg'],
+  ['soft-knit-overshirt', 'Soft Knit Overshirt', 'fashion', 1499, 2299, '/images/home/sneakers.jpg'],
+  ['accent-reading-chair', 'Accent Reading Chair', 'home', 6499, 8999, '/images/home/chair.jpg'],
+  ['warm-studio-lamp', 'Warm Studio Lamp', 'home', 1299, 2199, '/images/home/lamp.jpg'],
+  ['woven-storage-basket', 'Woven Storage Basket', 'home', 799, 1199, '/images/home/interior.jpg'],
+  ['ceramic-dining-set', 'Ceramic Dining Set', 'home', 1799, 2499, '/images/home/interior.jpg'],
+] as const;
+
+async function seedBrandStore(prisma: PrismaClient): Promise<void> {
+  await prisma.pincode.upsert({
+    where: { pincode: '244001' },
+    create: { pincode: '244001', area: 'Moradabad Central', city: 'Moradabad', state: 'Uttar Pradesh', latitude: 28.8386, longitude: 78.7733, serviceable: true, sameDayAvailable: true, deliveryDays: 1 },
+    update: { area: 'Moradabad Central', city: 'Moradabad', state: 'Uttar Pradesh', latitude: 28.8386, longitude: 78.7733, serviceable: true, sameDayAvailable: true, deliveryDays: 1 },
+  });
+  const categories = new Map<string, string>();
+  for (const slug of ['electronics', 'fashion', 'home', 'beauty', 'sports', 'books']) {
+    const category = await prisma.category.upsert({ where: { slug }, create: { slug, name: slug[0].toUpperCase() + slug.slice(1) }, update: { isActive: true } });
+    categories.set(slug, category.id);
+  }
+  const approvedAt = new Date('2026-01-01T00:00:00Z');
+  const vendors = new Map<string, string>();
+  for (const fixture of BRAND_VENDORS) {
+    const approved = fixture.slug !== 'demo-unapproved';
+    const vendor = await prisma.vendor.upsert({
+      where: { slug: fixture.slug },
+      create: { ...fixture, status: VendorStatus.ACTIVE, kycApprovedAt: approved ? approvedAt : null, isVerified: approved, pickupPincode: '244001', pickupAddress: `${fixture.displayName}, 24 Brand Market, Moradabad`, pickupLat: 28.8386, pickupLng: 78.7733, localArea: 'Moradabad Central', localCategory: 'Demo collections', deletedAt: null },
+      update: { ...fixture, status: VendorStatus.ACTIVE, kycApprovedAt: approved ? approvedAt : null, isVerified: approved, pickupPincode: '244001', pickupAddress: `${fixture.displayName}, 24 Brand Market, Moradabad`, pickupLat: 28.8386, pickupLng: 78.7733, localArea: 'Moradabad Central', localCategory: 'Demo collections', deletedAt: null },
+    });
+    vendors.set(fixture.slug, vendor.id);
+  }
+  const approvedVendors = BRAND_VENDORS.filter((vendor) => vendor.slug !== 'demo-unapproved');
+  for (const vendor of approvedVendors) {
+    const vendorId = vendors.get(vendor.slug)!;
+    const vendorProducts: string[] = [];
+    const productGroup = vendor.slug === 'demo-electronics' ? 'electronics' : vendor.slug === 'demo-fashion' ? 'fashion' : 'home';
+    const selected = BRAND_PRODUCTS.filter((item) => item[2] === productGroup);
+    for (const [index, item] of selected.entries()) {
+      const [slug, name, categorySlug, price, mrp, imageUrl] = item;
+      const product = await prisma.product.upsert({
+        where: { slug: `${vendor.slug}-${slug}` },
+        create: { slug: `${vendor.slug}-${slug}`, name, brand: vendor.displayName, description: `${name}, curated by ${vendor.displayName}.`, imageUrl, images: [imageUrl], pricePaise: price * 100, mrpPaise: mrp * 100, discountPercent: computeDiscountPercent(price * 100, mrp * 100), stock: 40, status: ProductStatus.LIVE, ratingAvg: 4.4 + index / 10, ratingCount: 30 + index * 11, salesCount: 100 - index, vendorId, categoryId: categories.get(categorySlug)!, searchText: `${name} ${vendor.displayName} ${categorySlug}`.toLowerCase(), deletedAt: null },
+        update: { name, brand: vendor.displayName, description: `${name}, curated by ${vendor.displayName}.`, imageUrl, images: [imageUrl], pricePaise: price * 100, mrpPaise: mrp * 100, discountPercent: computeDiscountPercent(price * 100, mrp * 100), stock: 40, status: ProductStatus.LIVE, ratingAvg: 4.4 + index / 10, ratingCount: 30 + index * 11, salesCount: 100 - index, vendorId, categoryId: categories.get(categorySlug)!, searchText: `${name} ${vendor.displayName} ${categorySlug}`.toLowerCase(), deletedAt: null },
+      });
+      vendorProducts.push(product.id);
+    }
+    for (const [index, title] of ['New season picks', 'Customer favourites'].entries()) {
+      const bannerId = `a0000000-0000-4000-8000-${String(100 + approvedVendors.indexOf(vendor) * 10 + index).padStart(12, '0')}`;
+      await prisma.storeBanner.upsert({ where: { id: bannerId }, create: { id: bannerId, vendorId, title, subtitle: `Explore ${vendor.displayName}`, imageUrl: vendor.bannerUrl, href: `/store/${vendor.slug}?section=products`, priority: index, isActive: true }, update: { vendorId, title, subtitle: `Explore ${vendor.displayName}`, imageUrl: vendor.bannerUrl, href: `/store/${vendor.slug}?section=products`, priority: index, isActive: true } });
+      const collectionId = `b0000000-0000-4000-8000-${String(100 + approvedVendors.indexOf(vendor) * 10 + index).padStart(12, '0')}`;
+      const collection = await prisma.storeCollection.upsert({ where: { id: collectionId }, create: { id: collectionId, vendorId, title, description: `Handpicked products from ${vendor.displayName}`, sortOrder: index, isActive: true }, update: { vendorId, title, description: `Handpicked products from ${vendor.displayName}`, sortOrder: index, isActive: true } });
+      for (const [sortOrder, productId] of vendorProducts.entries()) await prisma.storeCollectionProduct.upsert({ where: { collectionId_productId: { collectionId: collection.id, productId } }, create: { collectionId: collection.id, productId, sortOrder }, update: { sortOrder } });
+    }
+  }
+  const passwordHash = await bcrypt.hash('TrustlonDemo123!', BCRYPT_ROUNDS);
+  const users = [];
+  for (const [index, email] of ['seed-user-1@example.test', 'seed-user-2@example.test', 'seed-user-3@example.test'].entries()) {
+    users.push(await prisma.user.upsert({ where: { email }, create: { fullName: `Seed User ${index + 1}`, mobile: `+91990000000${index + 1}`, email, passwordHash, referralCode: `SEEDUSER${index + 1}`, termsAcceptedAt: approvedAt, status: 'ACTIVE' }, update: { fullName: `Seed User ${index + 1}`, passwordHash, status: 'ACTIVE' } }));
+  }
+  for (const [index, user] of users.entries()) {
+    const vendorId = vendors.get(approvedVendors[index % approvedVendors.length].slug)!;
+    await prisma.storeFollow.upsert({ where: { userId_vendorId: { userId: user.id, vendorId } }, create: { userId: user.id, vendorId }, update: {} });
+  }
+}
+
 if (require.main === module) {
+  if (process.env.NODE_ENV === 'production') throw new Error('Development seed refused in production.');
   const prisma = new PrismaClient();
   seedHomepage(prisma)
     .then((result) => console.log(`Seeded home page data: ${result.products} products.`))
+    .then(() => seedLocal(prisma))
+    .then(() => seedBrandStore(prisma))
+    .then(() => console.log('Seeded local sellers and Brand Store fixtures.'))
     .then(() => seedAccountDemo(prisma))
     .then((result) =>
       console.log(

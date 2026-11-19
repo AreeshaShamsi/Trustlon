@@ -72,7 +72,7 @@ export function LocalSellersStrip({ showViewAll = true }: { showViewAll?: boolea
           {sellers.map((seller) => (
             <Link
               key={seller.slug}
-              href={`/browse/${seller.slug}`}
+              href={`/store/${encodeURIComponent(seller.slug)}`}
               className="flex gap-4 rounded-lg border border-slate-200 p-4 hover:border-teal/40"
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-navy-50 text-lg font-semibold">

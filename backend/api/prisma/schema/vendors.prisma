@@ -91,6 +91,9 @@ model Vendor {
   documents   VendorDocument[]
   notes       VendorNote[]
   trustScores VendorTrustScore[]
+  storeBanners StoreBanner[]
+  storeCollections StoreCollection[]
+  storeFollowers StoreFollow[]
 
   @@index([status, isFeatured])
   @@index([pickupPincode])
@@ -203,4 +206,58 @@ model VendorTrustScore {
 
   @@unique([vendorId, recordedOn])
   @@map("vendor_trust_scores")
+}
+
+model StoreBanner {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendorId    String   @map("vendor_id") @db.Uuid
+  title       String   @db.VarChar(120)
+  subtitle    String?  @db.VarChar(240)
+  imageUrl    String   @map("image_url")
+  href        String?  @db.VarChar(300)
+  priority    Int      @default(0)
+  isActive    Boolean  @default(true) @map("is_active")
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  @@index([vendorId, isActive, priority])
+  @@map("store_banners")
+}
+
+model StoreCollection {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendorId    String   @map("vendor_id") @db.Uuid
+  title       String   @db.VarChar(120)
+  description String?  @db.VarChar(300)
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  products    StoreCollectionProduct[]
+  @@index([vendorId, isActive, sortOrder])
+  @@map("store_collections")
+}
+
+model StoreCollectionProduct {
+  collectionId String @map("collection_id") @db.Uuid
+  productId    String @map("product_id") @db.Uuid
+  sortOrder    Int    @default(0) @map("sort_order")
+  collection StoreCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@id([collectionId, productId])
+  @@index([productId])
+  @@map("store_collection_products")
+}
+
+model StoreFollow {
+  userId    String   @map("user_id") @db.Uuid
+  vendorId  String   @map("vendor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  @@id([userId, vendorId])
+  @@index([vendorId])
+  @@map("store_follows")
 }
